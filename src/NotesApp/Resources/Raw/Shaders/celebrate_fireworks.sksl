@@ -1,0 +1,93 @@
+// Celebration: Fireworks
+// Four sequential firework bursts at different screen positions, each a different color.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float NUM_FW   = 4.0;
+const float NUM_PART = 18.0;
+
+float hash1(float n) {
+    return fract(sin(n) * 43758.5453123);
+}
+
+half3 fwColor(float i) {
+    float h = fract(i * 0.618033);
+    if (h < 0.25) return half3(1.00, 0.35, 0.20); // orange-red
+    if (h < 0.50) return half3(1.00, 0.92, 0.20); // bright yellow
+    if (h < 0.75) return half3(0.30, 0.75, 1.00); // sky blue
+    return          half3(1.00, 0.45, 0.90);        // magenta
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    float envelope = smoothstep(0.0, 0.04, progress) * (1.0 - smoothstep(0.92, 1.0, progress));
+
+    half3 sparks = half3(0.0);
+
+    for (float fw = 0.0; fw < NUM_FW; fw += 1.0) {
+        // Burst center — spread across upper portion of screen
+        float cx = 0.15 + hash1(fw * 1.73 + 0.1) * 0.70;
+        float cy = 0.10 + hash1(fw * 2.41 + 0.2) * 0.45;
+
+        // Each firework detonates at a different point in the animation
+        float detonateAt = (fw / NUM_FW) * 0.55;
+        float window     = 0.40; // each burst lasts this fraction of total progress
+        float ft = clamp((progress - detonateAt) / window, 0.0, 1.0);
+
+        // Per-firework burst envelope: sharp flash, then slow fade
+        float burst = smoothstep(0.0, 0.12, ft) * (1.0 - smoothstep(0.45, 1.0, ft));
+
+        half3 color = fwColor(fw);
+
+        // Central detonation flash
+        float2 cd = uv - float2(cx, cy);
+        cd.x *= aspect;
+        float cdist = length(cd);
+        float flash = exp(-cdist * 35.0)
+                    * smoothstep(0.0, 0.06, ft)
+                    * (1.0 - smoothstep(0.06, 0.22, ft))
+                    * 4.0;
+        sparks += half3(1.0, 0.96, 0.85) * flash;
+
+        // Radial particles
+        for (float p = 0.0; p < NUM_PART; p += 1.0) {
+            float angle = (p / NUM_PART) * 6.28318 + hash1(fw * 13.0 + p * 0.7) * 0.35;
+            float speed = 0.14 + hash1(fw * 3.17 + p * 1.13) * 0.13;
+
+            // Particles shoot out then slow (ease-out) + gravity droop
+            float move   = ft * ft * (3.0 - 2.0 * ft); // smoothstep-like ease-out
+            float gravY  = 0.12 * ft * ft;
+
+            float px = cx + cos(angle) * speed * move;
+            float py = cy + sin(angle) * speed * move + gravY;
+
+            float2 d = uv - float2(px, py);
+            d.x *= aspect;
+            float dist = length(d);
+
+            // Particle size: larger near head, smaller as it fades
+            float sz = 0.007 + hash1(fw * 5.0 + p * 2.3) * 0.005;
+            float particle = clamp(sz * sz / (dist * dist + 0.00001), 0.0, 1.0) * burst;
+
+            // Slight color variation per particle
+            float tint = hash1(fw * 7.0 + p * 3.1) * 0.25;
+            sparks += mix(color, half3(1.0, 0.95, 0.8), tint) * particle;
+        }
+    }
+
+    half3 result = bg.rgb + clamp(sparks, 0.0, 2.5) * envelope;
+    return half4(clamp(result, 0.0, 1.0), bg.a);
+}

@@ -1,0 +1,70 @@
+// Celebration: Aurora Borealis
+// Flowing chromatic curtains of light sweep across the screen, hues cycling over time.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float NUM_BANDS = 6.0;
+
+half3 hueToRgb(float h) {
+    float3 rgb = clamp(abs(fract(float3(h, h + 0.333, h + 0.667)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+    return half3(rgb);
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    // Global envelope: sweep in slowly, hold, then fade
+    float envelope = smoothstep(0.0, 0.18, progress) * (1.0 - smoothstep(0.78, 1.0, progress));
+
+    half3 aurora = half3(0.0);
+
+    for (float i = 0.0; i < NUM_BANDS; i += 1.0) {
+        float phase = i / NUM_BANDS;
+
+        // Each band sweeps in from the top with a slight stagger
+        float delay  = phase * 0.18;
+        float t      = clamp((progress - delay) / (1.0 - delay), 0.0, 1.0);
+
+        // Band's vertical rest position — spread from top-third to bottom-third
+        float bandY  = 0.12 + phase * 0.76;
+
+        // Wavy horizontal undulation (each band has its own frequency & speed)
+        float wFreq  = 1.8 + i * 0.9;
+        float wSpeed = 0.8 + i * 0.3;
+        float wave   = bandY + (0.035 + phase * 0.025)
+                     * sin(uv.x * wFreq * aspect + iTime * wSpeed + phase * 5.1);
+
+        // Band fades in as it sweeps down from above
+        float sweepY = -0.15 + (bandY + 0.15) * smoothstep(0.0, 0.6, t);
+        float dist   = abs(uv.y - (wave * smoothstep(0.0, 0.6, t) + sweepY * (1.0 - smoothstep(0.0, 0.6, t))));
+
+        float width  = 0.030 + phase * 0.018;
+        float band   = exp(-dist * dist / (width * width)) * t;
+
+        // Opacity ripples along the band for a curtain shimmer
+        float shimmer = 0.55 + 0.45 * sin(uv.x * 9.0 * aspect + iTime * (1.5 + phase) + phase * 3.7);
+
+        // Hue: shifts along x and slowly drifts over time
+        float hue = phase * 0.85 + uv.x * 0.18 + iTime * 0.04;
+        aurora += hueToRgb(hue) * band * shimmer;
+    }
+
+    // Soft vignette so aurora doesn't hit very edges too hard
+    float2 vig = uv * 2.0 - 1.0;
+    float  vignette = 1.0 - 0.35 * dot(vig, vig);
+
+    half3 result = bg.rgb + aurora * envelope * 1.4 * vignette;
+    return half4(clamp(result, 0.0, 1.0), bg.a);
+}

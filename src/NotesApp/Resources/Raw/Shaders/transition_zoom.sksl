@@ -1,0 +1,35 @@
+// Transition: Punch Zoom
+// Image rapidly zooms in and flashes to white (progress 0→0.5),
+// then zooms back out from white to reveal new content (progress 0.5→1).
+// Cinematic "lens punch" feel.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv = inputCoord / iImageResolution;
+
+    // phase: 0→1→0
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Zoom in: scale UV toward iCenter as phase increases
+    // At phase=1 we're zoomed ~8x in
+    float scale = 1.0 + phase * phase * 7.0;
+
+    float2 sampleUV    = clamp(iCenter + (uv - iCenter) / scale, 0.0, 1.0);
+    float2 sampleCoord = sampleUV * iImageResolution;
+    half4  col         = iImage1.eval(sampleCoord);
+
+    // Flash to white as zoom peaks — at full brightness rgb clamps to (1,1,1) = white.
+    // Keep alpha = col.a so the control stays opaque; no background bleed-through.
+    float brightness = 1.0 + phase * 2.5;
+
+    return half4(clamp(col.rgb * brightness, 0.0, 1.0), col.a);
+}

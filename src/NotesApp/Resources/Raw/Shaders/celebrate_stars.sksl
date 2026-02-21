@@ -1,0 +1,84 @@
+// Celebration: Star Rain
+// Twinkling 4-pointed stars cascade down in festive colors.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float TAU      = 6.28318530718;
+const float NUM_STARS = 36.0;
+
+float hash1(float n) {
+    return fract(sin(n) * 43758.5453123);
+}
+
+half3 starColor(float t) {
+    float h = fract(t);
+    if (h < 0.20) return half3(1.00, 0.92, 0.30); // gold
+    if (h < 0.40) return half3(0.80, 0.40, 1.00); // purple
+    if (h < 0.60) return half3(0.30, 0.85, 1.00); // cyan
+    if (h < 0.80) return half3(1.00, 0.50, 0.25); // orange
+    return          half3(0.95, 1.00, 0.90);        // pale green-white
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    float envelope = smoothstep(0.0, 0.07, progress) * (1.0 - smoothstep(0.85, 1.0, progress));
+
+    half3 glow = half3(0.0);
+
+    for (float i = 0.0; i < NUM_STARS; i += 1.0) {
+        // Start above top edge, random x
+        float sx = hash1(i * 1.37 + 0.1);
+        float sy = -0.06 - hash1(i * 2.71 + 0.3) * 0.14;
+
+        float fallSpeed = 0.50 + hash1(i * 3.19 + 0.5) * 0.85;
+        float delay     = hash1(i * 4.83 + 1.7) * 0.42;
+        float t         = clamp((progress - delay) / (1.0 - delay), 0.0, 1.0);
+
+        // Quadratic gravity fall
+        float py = sy + fallSpeed * t * t;
+        // Gentle horizontal sway
+        float px = sx + 0.028 * sin(iTime * (1.8 + hash1(i * 5.0)) + i * 4.3);
+
+        float2 d = uv - float2(px, py);
+        d.x *= aspect;
+
+        float size = 0.013 + hash1(i * 6.11 + 2.0) * 0.011;
+
+        // 4-pointed star: elongated along ±45° diagonals using a diamond in rotated space
+        // Rotate d by 45° then use Chebyshev distance for a cross/plus star
+        float2 r45 = float2(d.x + d.y, d.y - d.x) * 0.7071; // rotate 45°
+        float cross  = min(abs(r45.x), abs(r45.y)); // "spike" sharpness
+        float spikes = clamp(1.0 - cross / (size * 0.45), 0.0, 1.0);
+        spikes = pow(spikes, 1.5);
+
+        // Soft circular core
+        float dist = length(d);
+        float core = exp(-dist * dist / (size * size * 0.18));
+
+        // Twinkle: each star blinks at its own frequency
+        float freq   = 2.8 + hash1(i * 7.23 + 3.0) * 4.5;
+        float phase  = hash1(i * 8.47 + 4.0) * TAU;
+        float twinkle = pow(0.5 + 0.5 * sin(iTime * freq + phase), 3.0);
+
+        float brightness = (spikes * 0.7 + core * 1.2) * twinkle;
+
+        half3 color = starColor(hash1(i * 9.61 + 5.0));
+        glow += color * brightness;
+    }
+
+    half3 result = bg.rgb + clamp(glow, 0.0, 2.0) * envelope;
+    return half4(clamp(result, 0.0, 1.0), bg.a);
+}

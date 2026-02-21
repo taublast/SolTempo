@@ -1,0 +1,54 @@
+// Transition: Ripple
+// An expanding shockwave ring sweeps outward from iCenter, hiding the image behind it.
+// The ring displaces pixels at its front edge. At progress 0.5 the image is gone.
+// Then the ring contracts back inward to reveal new content.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv     = inputCoord / iImageResolution;
+    float  aspect = iImageResolution.x / iImageResolution.y;
+
+    // phase: 0→1→0
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Aspect-corrected direction from center
+    float2 d    = uv - iCenter;
+    d.x        *= aspect;
+    float dist  = length(d);
+    float2 ndir = d / max(dist, 0.001); // unit vector outward from center
+
+    // Ring travels outward (hide) then contracts (reveal)
+    float shockR = phase * 0.84;
+
+    // Radial displacement: Gaussian peak at the ring front
+    float ringDist = dist - shockR;
+    float disp     = exp(-ringDist * ringDist * 55.0) * 0.075 * phase;
+
+    // Displace UV outward — convert back to un-aspect-corrected UV space
+    float2 dispUV = clamp(uv + ndir * disp / float2(aspect, 1.0), 0.0, 1.0);
+    float2 sampleCoord = dispUV * iImageResolution;
+
+    half4 col = iImage1.eval(sampleCoord);
+
+    // Show mask: 0 inside the ring boundary (hidden), 1 outside (visible)
+    float edge = 0.022;
+    float show = smoothstep(shockR - edge, shockR + edge, dist);
+
+    // Inside ring: opaque black. Outside: displaced image.
+    half4 result = mix(half4(0.0, 0.0, 0.0, col.a), col, show);
+
+    // Bright cyan-white rim at the shockwave boundary (both sides)
+    float rim = exp(-ringDist * ringDist * 25.0) * phase * 0.65;
+    result.rgb = clamp(result.rgb + half3(0.55, 0.82, 1.00) * rim, 0.0, 1.0);
+
+    return result;
+}

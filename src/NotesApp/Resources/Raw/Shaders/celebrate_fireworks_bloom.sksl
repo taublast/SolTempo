@@ -1,0 +1,110 @@
+// Celebration: Fireworks Bloom (Chrysanthemum / Peony)
+// Three large round blooms with two particle rings each.
+// Outer ring: fast, strong gravity droop. Inner ring: slow, stays round.
+// Particles cool from white-hot to color as they travel.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float NUM_FW    = 3.0;
+const float NUM_OUTER = 30.0;
+const float NUM_INNER = 15.0;
+
+float hash1(float n) {
+    return fract(sin(n) * 43758.5453123);
+}
+
+half3 bloomColor(float i) {
+    float h = fract(i * 0.618033 + 0.12);
+    if (h < 0.25) return half3(1.00, 0.55, 0.10); // amber
+    if (h < 0.50) return half3(0.20, 0.95, 0.55); // spring green
+    if (h < 0.75) return half3(0.55, 0.30, 1.00); // violet
+    return          half3(1.00, 0.25, 0.45);        // crimson
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    float envelope = smoothstep(0.0, 0.04, progress) * (1.0 - smoothstep(0.90, 1.0, progress));
+
+    half3 sparks = half3(0.0);
+
+    for (float fw = 0.0; fw < NUM_FW; fw += 1.0) {
+        float cx = 0.18 + hash1(fw * 1.73 + 0.1) * 0.64;
+        float cy = 0.10 + hash1(fw * 2.41 + 0.2) * 0.38;
+
+        float detonateAt = (fw / NUM_FW) * 0.42;
+        float window     = 0.58;
+        float ft = clamp((progress - detonateAt) / window, 0.0, 1.0);
+        float burst = smoothstep(0.0, 0.08, ft) * (1.0 - smoothstep(0.50, 1.0, ft));
+
+        half3 color = bloomColor(fw);
+
+        // Central detonation flash
+        float2 cd = uv - float2(cx, cy);
+        cd.x *= aspect;
+        float cdist = length(cd);
+        float flash = exp(-cdist * 26.0)
+                    * smoothstep(0.0, 0.06, ft)
+                    * (1.0 - smoothstep(0.06, 0.28, ft))
+                    * 5.5;
+        sparks += half3(1.00, 0.97, 0.92) * flash;
+
+        // Outer ring — fast, droops heavily
+        for (float p = 0.0; p < NUM_OUTER; p += 1.0) {
+            float angle = (p / NUM_OUTER) * 6.28318;
+            float speed = 0.21 + hash1(fw * 3.0 + p * 1.1) * 0.07;
+            float move  = ft * ft * (3.0 - 2.0 * ft);
+            float gravY = 0.22 * ft * ft; // pronounced droop
+
+            float px = cx + cos(angle) * speed * move;
+            float py = cy + sin(angle) * speed * move + gravY;
+
+            float2 d = uv - float2(px, py);
+            d.x *= aspect;
+            float dist = length(d);
+
+            // Cool from white-hot at birth to pure color as particle ages
+            float heat   = 1.0 - smoothstep(0.0, 0.32, ft);
+            half3 pColor = mix(color, half3(1.00, 0.97, 0.88), heat);
+
+            float sz = 0.0075 + hash1(fw * 5.0 + p * 2.1) * 0.004;
+            float particle = clamp(sz * sz / (dist * dist + 0.00002), 0.0, 1.0) * burst;
+            sparks += pColor * particle;
+        }
+
+        // Inner ring — slow, stays rounder, softer warm glow
+        for (float p = 0.0; p < NUM_INNER; p += 1.0) {
+            // Offset by half-step so it interleaves with outer ring visually
+            float angle = (p / NUM_INNER) * 6.28318 + 3.14159 / NUM_INNER;
+            float speed = 0.09 + hash1(fw * 7.0 + p * 1.3) * 0.04;
+            float move  = ft * ft * (3.0 - 2.0 * ft);
+            float gravY = 0.07 * ft * ft;
+
+            float px = cx + cos(angle) * speed * move;
+            float py = cy + sin(angle) * speed * move + gravY;
+
+            float2 d = uv - float2(px, py);
+            d.x *= aspect;
+            float dist = length(d);
+
+            float sz = 0.009 + hash1(fw * 9.0 + p * 1.7) * 0.005;
+            float particle = clamp(sz * sz / (dist * dist + 0.00002), 0.0, 1.0) * burst * 0.65;
+            sparks += half3(1.00, 0.95, 0.80) * particle;
+        }
+    }
+
+    half3 result = bg.rgb + clamp(sparks, 0.0, 2.5) * envelope;
+    return half4(clamp(result, 0.0, 1.0), bg.a);
+}

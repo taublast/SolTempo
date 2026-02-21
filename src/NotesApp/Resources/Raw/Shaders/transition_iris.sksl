@@ -1,0 +1,51 @@
+// Transition: Iris
+// A black circle expands from iCenter to cover the screen (progress 0→0.5),
+// then contracts back to reveal the new content (progress 0.5→1).
+// Switch your UI content in the Midpoint event.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4  bg = iImage1.eval(inputCoord);
+
+    float2 uv     = inputCoord / iImageResolution;
+    float  aspect = iImageResolution.x / iImageResolution.y;
+
+    // phase: 0→1→0  (1 = fully hidden at progress 0.5)
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Aspect-corrected distance from center
+    float2 d = uv - iCenter;
+    d.x *= aspect;
+    float dist = length(d);
+
+    // Compute the radius needed to cover the farthest corner in aspect-corrected space
+    float maxR = 0.5 * sqrt(aspect * aspect + 1.0) + 0.04;
+
+    // Circle SHRINKS from full-screen to a point at midpoint, then OPENS back.
+    // (1 - phase): 1→0→1  — full at start, zero at midpoint, full at end.
+    float circleR = (1.0 - phase) * maxR;
+
+    // Soft anti-alias edge width
+    float edge = 0.018;
+
+    // mask = 0 inside circle (show image), 1 outside circle (black surrounding)
+    float mask = smoothstep(circleR - edge, circleR + edge, dist);
+
+    // Image visible inside circle, opaque black outside — never punch through
+    half4 result = mix(bg, half4(0.0, 0.0, 0.0, bg.a), mask);
+
+    // Subtle bright rim on the black side of the boundary
+    float rim = exp(-abs(dist - circleR) * 55.0) * phase * 0.45 * mask;
+    result.rgb = clamp(result.rgb + half3(0.75, 0.90, 1.00) * rim, 0.0, 1.0);
+
+    return result;
+}

@@ -1,0 +1,110 @@
+// Celebration: Golden Starburst + Shimmer
+// Radial golden rays burst from center, white sparkles scatter across screen.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float TAU = 6.28318530718;
+
+float hash2d(float2 p) {
+    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    // Center driven by iCenter uniform (default 0.5, 0.44)
+    float2 centered = uv - iCenter;
+    centered.x *= aspect;
+
+    float dist  = length(centered);
+    float angle = atan(centered.y, centered.x);
+
+    // === ENVELOPE ===
+    float burstIn  = smoothstep(0.0,  0.18, progress);
+    float fadeOut  = 1.0 - smoothstep(0.70, 1.0,  progress);
+    float envelope = burstIn * fadeOut;
+
+    // === STARBURST RAYS ===
+    // 12 main rays
+    float rays = pow(abs(cos(angle * 6.0)), 8.0);
+    // 24 thin secondary rays (less intense)
+    rays += pow(abs(cos(angle * 12.0)), 18.0) * 0.30;
+
+    // Rays fade toward outer edge
+    float rayReach = 0.75;
+    float rayFade  = 1.0 - smoothstep(0.0, rayReach, dist);
+    rays *= rayFade;
+
+    // Rays expand outward at burst start (open like iris)
+    rays *= smoothstep(0.0, 0.16, progress);
+
+    // === CENTER GLOW ===
+    float outerGlow  = exp(-dist *  7.0) * 2.8;
+    float innerCore  = exp(-dist * 22.0) * 5.5;
+
+    // === SPARKLES (screen-wide shimmer) ===
+    float sparkle          = 0.0;
+    const float numSparks  = 24.0;
+
+    // Sparkles only active during sustain phase
+    float sparkEnv = smoothstep(0.20, 0.38, progress)
+                   * (1.0 - smoothstep(0.68, 0.95, progress));
+
+    for (float i = 0.0; i < numSparks; i += 1.0) {
+        // Fixed random positions spread across screen
+        float2 sPos = float2(
+            hash2d(float2(i, 1.0)),
+            hash2d(float2(i, 9.0))
+        );
+        // Keep away from very edges
+        sPos = sPos * 0.82 + 0.09;
+
+        float2 sd = uv - sPos;
+        sd.x *= aspect;
+        float sdist = length(sd);
+
+        float sparkSize = 0.005 + hash2d(float2(i, 3.0)) * 0.007;
+
+        // Each sparkle blinks at its own frequency & phase
+        float freq  = 2.5 + hash2d(float2(i, 23.0)) * 3.0;
+        float phase = hash2d(float2(i, 17.0)) * TAU;
+        float blink = pow(max(0.0, sin(iTime * freq + phase)), 7.0);
+
+        // Point-light falloff
+        float s = clamp(sparkSize * sparkSize / (sdist * sdist + 0.0001), 0.0, 1.0);
+
+        sparkle += s * blink * sparkEnv;
+    }
+
+    // === COLORS ===
+    half3 gold       = half3(1.00, 0.82, 0.00);
+    half3 brightGold = half3(1.00, 0.95, 0.50);
+    half3 white      = half3(1.00, 0.97, 0.88);
+
+    // Rays: brighter gold near center tips, deeper gold outward
+    float nearCenter = 1.0 - smoothstep(0.0, rayReach, dist);
+    half3 rayColor   = mix(gold, brightGold, nearCenter) * rays;
+
+    // Glow: white hot core blending to gold
+    half3 glowColor  = mix(gold * outerGlow, white * innerCore, 0.55);
+
+    // Sparkles: cool white
+    half3 sparkColor = white * sparkle * 1.4;
+
+    // Final additive blend onto background
+    half3 celebration = (rayColor + glowColor + sparkColor) * envelope;
+    half3 result = bg.rgb + celebration * 0.92;
+    return half4(result, bg.a);
+}

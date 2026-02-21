@@ -1,0 +1,50 @@
+// Transition: Swirl
+// Image spirals into iCenter and fades (progress 0→0.5), then unspirals back (0.5→1).
+// Inner pixels twist more than outer ones, creating a vortex pull effect.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv     = inputCoord / iImageResolution;
+    float  aspect = iImageResolution.x / iImageResolution.y;
+
+    // phase: 0→1→0
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Centered, aspect-corrected
+    float2 d    = uv - iCenter;
+    d.x        *= aspect;
+    float dist  = length(d);
+
+    // Twist angle: strongest at center, fades toward edges
+    // At phase=1 inner pixels rotate ~2.5 full turns
+    float maxAngle  = PI * 5.0;
+    float falloff   = clamp(1.0 - dist / 0.75, 0.0, 1.0);
+    float theta     = phase * maxAngle * falloff * falloff; // quadratic = tighter center pull
+
+    // Rotate d by theta
+    float s = sin(theta), c = cos(theta);
+    float2 rotD = float2(d.x * c - d.y * s, d.x * s + d.y * c);
+
+    // Undo aspect correction and sample
+    rotD.x      /= aspect;
+    float2 sampleUV    = clamp(iCenter + rotD, 0.0, 1.0);
+    float2 sampleCoord = sampleUV * iImageResolution;
+    half4  col         = iImage1.eval(sampleCoord);
+
+    // Dim to black as swirl peaks — keep alpha opaque so no background bleed-through
+    // Cubic easing keeps the image visible longer before going dark
+    float fade = 1.0 - phase * phase * phase;
+
+    return half4(col.rgb * fade, col.a);
+}

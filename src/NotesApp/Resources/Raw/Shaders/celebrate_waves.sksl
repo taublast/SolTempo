@@ -1,0 +1,67 @@
+// Celebration: Rainbow Sound Waves
+// Concentric rings expand outward from center, each a different spectrum hue.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half3 hueToRgb(float h) {
+    float3 rgb = clamp(abs(fract(float3(h, h + 0.333, h + 0.667)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+    return half3(rgb);
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float2 centered = uv - iCenter;
+    centered.x *= iImageResolution.x / iImageResolution.y;
+
+    float dist = length(centered);
+
+    // Global envelope: fast in, hold, fade out
+    float envelope = smoothstep(0.0, 0.12, progress) * (1.0 - smoothstep(0.75, 1.0, progress));
+
+    const float numRings  = 7.0;
+    const float maxRadius = 0.95;
+
+    half3 ringGlow = half3(0.0);
+
+    for (float i = 0.0; i < numRings; i += 1.0) {
+        float phase = i / numRings;
+
+        // Each ring launches with a small delay after the previous
+        float launchAt = phase * 0.10;
+        float ringProgress = clamp((progress - launchAt) / (1.0 - launchAt), 0.0, 1.0);
+
+        // Ring expands from 0 to maxRadius
+        float ringRadius = maxRadius * ringProgress;
+
+        // Ring width (narrow band)
+        float d = abs(dist - ringRadius);
+        float width = 0.016;
+        float ring = clamp(width * width / (d * d + 0.0001), 0.0, 1.0);
+
+        // Fade as ring expands (youngest = brightest)
+        float ageFade = 1.0 - ringProgress * 0.75;
+
+        // Spectrum hue, slow rotation over iTime
+        half3 color = hueToRgb(phase + iTime * 0.04);
+
+        ringGlow += color * ring * ageFade;
+    }
+
+    // Add a soft central glow that pops at burst moment
+    float burstGlow = exp(-dist * 12.0) * smoothstep(0.0, 0.15, progress) * (1.0 - smoothstep(0.30, 0.55, progress));
+    ringGlow += half3(1.0, 0.9, 0.8) * burstGlow * 1.5;
+
+    half3 result = bg.rgb + ringGlow * envelope * 1.3;
+    return half4(result, bg.a);
+}

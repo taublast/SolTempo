@@ -12,6 +12,7 @@ namespace MusicNotes.UI
 {
     public partial class AudioPage
     {
+        private SkiaImage _backgroundImage;
         private SkiaShape _takePictureButton;
         private SkiaLabel _statusLabel;
         private SettingsButton _videoRecordButton;
@@ -25,8 +26,8 @@ namespace MusicNotes.UI
         private SkiaDrawer _settingsDrawer;
         private SkiaViewSwitcher _settingsTabs;
         private SkiaLabel[] _tabLabels;
-        private AudioVisualizer _rhythmDetector;
-        private AudioVisualizer _metronome;
+        //private AudioVisualizer _rhythmDetector;
+        //private AudioVisualizer _metronome;
         private int _currentMode = 0; // 0=Notes, 1=DrummerBPM, 2=Metronome, 3=MusicBPM
         private SkiaLabel _modeButtonIcon;
 
@@ -68,7 +69,8 @@ namespace MusicNotes.UI
                             // by https://unsplash.com/@john_matychuk
                             Source = @"Images\musicback.jpg",
                             Aspect = TransformAspect.AspectCover,
-                        }.Fill(),
+                        }.Fill()
+                        .Assign(out _backgroundImage),
 
                         // Fullscreen Camera preview
                         new AudioRecorder()
@@ -88,7 +90,7 @@ namespace MusicNotes.UI
                             {
                                 new SkiaBackdrop()
                                 {
-                                    UseCache = SkiaCacheType.Operations,
+                                    //UseCache = SkiaCacheType.Operations,
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
                                     Blur = 0,
@@ -115,26 +117,25 @@ namespace MusicNotes.UI
 
                             }
                         }.Assign(out _musicNotesWrapper),
+                       
+                        //new AudioVisualizer(new AudioRhythmDetector())
+                        //{
+                        //    Margin = new (16,16,16,0),
+                        //    HorizontalOptions = LayoutOptions.Fill,
+                        //    HeightRequest = 350,
+                        //    BackgroundColor = Color.Parse("#22000000"),
+                        //    IsVisible = false,
+                        //}.Assign(out _rhythmDetector),
 
-
-                        new AudioVisualizer(new AudioRhythmDetector())
-                        {
-                            Margin = new (16,16,16,0),
-                            HorizontalOptions = LayoutOptions.Fill,
-                            HeightRequest = 350,
-                            BackgroundColor = Color.Parse("#22000000"),
-                            IsVisible = false,
-                        }.Assign(out _rhythmDetector),
-
-                        new AudioVisualizer(new AudioMetronome())
-                        {
-                            Opacity = 0.9,
-                            Margin = new (16,16,16,0),
-                            HorizontalOptions = LayoutOptions.Fill,
-                            HeightRequest = 350,
-                            BackgroundColor = Color.Parse("#22000000"),
-                            IsVisible = false,
-                        }.Assign(out _metronome),
+                        //new AudioVisualizer(new AudioMetronome())
+                        //{
+                        //    Opacity = 0.9,
+                        //    Margin = new (16,16,16,0),
+                        //    HorizontalOptions = LayoutOptions.Fill,
+                        //    HeightRequest = 350,
+                        //    BackgroundColor = Color.Parse("#22000000"),
+                        //    IsVisible = false,
+                        //}.Assign(out _metronome),
 
                         // BPM MUSIC
                         new SkiaShape()
@@ -147,7 +148,7 @@ namespace MusicNotes.UI
                             {
                                 new SkiaBackdrop()
                                 {
-                                    UseCache = SkiaCacheType.Operations,
+                                    //UseCache = SkiaCacheType.Operations,
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
                                     Blur = 0,
@@ -174,6 +175,7 @@ namespace MusicNotes.UI
 
                             }
                         }.Assign(out _musicBPMDetectorWrapper),
+
 
                         new AudioVisualizer(new AudioSoundBars())
                         {
@@ -214,6 +216,7 @@ namespace MusicNotes.UI
                                         }
                                     }
                                 },
+
                                 new SkiaRow()
                                 {
                                     UseCache = SkiaCacheType.Operations,
@@ -264,7 +267,28 @@ namespace MusicNotes.UI
                                         }
                                         .OnTapped(me =>
                                         {
-                                            ToggleVisualizerMode();
+
+                                           var fx = new TransitionEffect
+                                           { 
+                                               ShaderSource = @"Shaders\transition_iris.sksl",
+                                               //ShaderSource = @"Shaders\transition_ripple.sksl",
+                                               //ShaderSource = @"Shaders\transition_swirl.sksl",
+                                               //ShaderSource = @"Shaders\transition_zoom.sksl",
+                                               DurationMs = 600
+                                           };
+                                           fx.Midpoint  += (s, e) =>
+                                           {
+                                               ToggleVisualizerMode();
+                                           };
+                                           fx.Completed += (s, e) =>
+                                           {
+                                               mainStack.VisualEffects.Remove(fx);
+                                               //mainStack.DisposeObject(fx);
+                                           };
+
+                                            mainStack.VisualEffects.Add(fx);
+                                           fx.Play(_backgroundImage);
+
                                         }),
 
                                         // Settings Button
@@ -354,7 +378,10 @@ namespace MusicNotes.UI
                                                 }
                                             }
                                         }
-                                        .OnTapped(me => { /* Help action */ }),
+                                        .OnTapped(me =>
+                                        {
+                                            TriggerCelebration();
+                                        }),
 
                                         /*
                                         // Profile Button
@@ -461,6 +488,63 @@ namespace MusicNotes.UI
             ToggleVisualizerMode(UserSettings.Current.Module);
         }
 
+        /// <summary>
+        /// Plays a celebration shader over the background image.
+        /// Uncomment one ShaderSource to compare variants:
+        ///   celebrate_starburst            — golden rays + sparkles               (2500 ms)
+        ///   celebrate_waves                — rainbow concentric rings              (3000 ms)
+        ///   celebrate_confetti             — tumbling rectangular confetti (rain)  (3500 ms)
+        ///   celebrate_confetti_burst       — confetti pops radially from center    (3500 ms)
+        ///   celebrate_confetti_cannon      — two corner cannons, streams cross     (3500 ms)
+        ///   celebrate_confetti_streamers   — long ribbons flutter as they fall     (3500 ms)
+        ///   celebrate_fireworks            — 4 sequential colored bursts           (3500 ms)
+        ///   celebrate_fireworks_launch     — rockets with comet trails, then burst (4000 ms)
+        ///   celebrate_fireworks_bloom      — 3 big chrysanthemum blooms            (4000 ms)
+        ///   celebrate_fireworks_glitter    — 5 dense blinking glitter bursts       (3500 ms)
+        ///   celebrate_aurora               — chromatic aurora curtains              (3000 ms)
+        ///   celebrate_stars                — twinkling star rain                    (3500 ms)
+        /// </summary>
+        public void TriggerCelebration()
+        {
+            if (_backgroundImage == null)
+                return;
+
+            var fx = new CelebrationEffect
+            {
+                ShaderSource = @"Shaders\celebrate_starburst.sksl",
+                //DurationMs = 2500,
+                //ShaderSource = @"Shaders\celebrate_waves.sksl",
+                //DurationMs = 3000,
+                //ShaderSource = @"Shaders\celebrate_confetti.sksl",
+                //DurationMs = 3500,
+                //ShaderSource = @"Shaders\celebrate_confetti_burst.sksl",
+                //DurationMs = 3500,
+                //ShaderSource = @"Shaders\celebrate_fireworks.sksl",
+                //DurationMs = 3500,
+                //ShaderSource = @"Shaders\celebrate_fireworks_launch.sksl",
+                //DurationMs = 4000,
+                //ShaderSource = @"Shaders\celebrate_fireworks_bloom.sksl",
+                DurationMs = 5000,
+                //ShaderSource = @"Shaders\celebrate_fireworks_glitter.sksl",
+                //DurationMs = 3500,
+                //ShaderSource = @"Shaders\celebrate_aurora.sksl",
+                //DurationMs = 3000,
+                //ShaderSource = @"Shaders\celebrate_stars.sksl",
+                //DurationMs = 3500,
+                //Center = new SKPoint(0.5f, 0.33f), // adjust origin of radial effects
+            };
+
+            fx.Completed += (s, e) =>
+            {
+                _backgroundImage.VisualEffects.Remove(fx);
+                System.Diagnostics.Debug.WriteLine($"Stopped effect {fx.ShaderSource}");
+            };
+
+            _backgroundImage.VisualEffects.Add(fx);
+            System.Diagnostics.Debug.WriteLine($"Started effect {fx.ShaderSource}");
+            fx.Play(_backgroundImage);
+        }
+
         public void ShowAlert(string title, string message)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
@@ -469,7 +553,7 @@ namespace MusicNotes.UI
             });
         }
 
-        private void ToggleVisualizerMode(int index=-1)
+        private void ToggleVisualizerMode(int index = -1)
         {
             var oldMode = _currentMode;
             if (index >= 0)
@@ -479,46 +563,48 @@ namespace MusicNotes.UI
             else
             {
                 // Cycle through modes: 0=Notes, 1=DrummerBPM, 2=Metronome, 3=MusicBPM
-                _currentMode = (_currentMode + 1) % 4;
+                _currentMode = (_currentMode + 1) % 2;
             }
 
             // Hide all visualizers
             if (_musicNotesWrapper != null)
                 _musicNotesWrapper.IsVisible = false;
-            if (_rhythmDetector != null)
-                _rhythmDetector.IsVisible = false;
-            if (_metronome != null)
-                _metronome.IsVisible = false;
+            //if (_rhythmDetector != null)
+            //    _rhythmDetector.IsVisible = false;
+            //if (_metronome != null)
+            //    _metronome.IsVisible = false;
             if (_musicBPMDetectorWrapper != null)
                 _musicBPMDetectorWrapper.IsVisible = false;
-            
+
             // Show current mode visualizer
             switch (_currentMode)
             {
-                case 0: // Notes
-                    if (_musicNotesWrapper != null)
-                        _musicNotesWrapper.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.PlaylistMusic;//"🎵";
-                    break;
-                case 1: // Drummer BPM
-                    if (_rhythmDetector != null)
-                        _rhythmDetector.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.DotsCircle; // IconFont.TimerMusic;// IconFont.Metronome;// "🥁";
-                    break;
-                case 2: // Metronome
-                    if (_metronome != null)
-                        _metronome.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.AccountMusic;// "⏱️";
-                    break;
-                case 3: // Music BPM
-                    if (_musicBPMDetectorWrapper != null)
-                        _musicBPMDetectorWrapper.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.TimerMusic;//IconFont.Music;//"🎼";
-                    break;
+            case 0: // Notes
+            if (_musicNotesWrapper != null)
+                _musicNotesWrapper.IsVisible = true;
+            if (_modeButtonIcon != null)
+                _modeButtonIcon.Text = IconFont.PlaylistMusic;//"🎵";
+            break;
+            case 1:
+            if (_musicBPMDetectorWrapper != null)
+                _musicBPMDetectorWrapper.IsVisible = true;
+            if (_modeButtonIcon != null)
+                _modeButtonIcon.Text = IconFont.TimerMusic;//IconFont.Music;//"🎼";                
+            break;
+            case 2: // Metronome
+            //if (_metronome != null)
+            //    _metronome.IsVisible = true;
+            if (_modeButtonIcon != null)
+                _modeButtonIcon.Text = IconFont.AccountMusic;// "⏱️";
+            break;
+            case 3: // Music BPM
+
+            // Drummer BPM
+            //if (_rhythmDetector != null)
+            //    _rhythmDetector.IsVisible = true;
+            if (_modeButtonIcon != null)
+                _modeButtonIcon.Text = IconFont.DotsCircle; // IconFont.TimerMusic;// IconFont.Metronome;// "🥁";
+            break;
             }
 
             if (oldMode != _currentMode)

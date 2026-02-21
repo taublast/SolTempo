@@ -1,0 +1,118 @@
+// Celebration: Fireworks with Launch Trails
+// Rockets streak upward from the bottom with a golden comet tail, then burst in color.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float NUM_ROCKETS = 3.0;
+const float NUM_TRAIL   = 12.0;
+const float NUM_PART    = 22.0;
+
+float hash1(float n) {
+    return fract(sin(n) * 43758.5453123);
+}
+
+half3 rocketColor(float i) {
+    float h = fract(i * 0.618033);
+    if (h < 0.33) return half3(1.00, 0.30, 0.20); // red-orange
+    if (h < 0.66) return half3(0.25, 0.80, 1.00); // sky blue
+    return          half3(1.00, 0.45, 0.90);        // magenta
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4 bg = iImage1.eval(inputCoord);
+
+    float2 uv = inputCoord / iImageResolution;
+    float aspect = iImageResolution.x / iImageResolution.y;
+
+    float envelope = smoothstep(0.0, 0.03, progress) * (1.0 - smoothstep(0.93, 1.0, progress));
+
+    half3 sparks = half3(0.0);
+
+    for (float r = 0.0; r < NUM_ROCKETS; r += 1.0) {
+        float cx       = 0.20 + hash1(r * 1.73 + 0.1) * 0.60;
+        float explodeY = 0.08 + hash1(r * 2.41 + 0.2) * 0.32;
+        float launchY  = 1.02; // below screen
+
+        // Stagger each rocket launch
+        float launchDelay = (r / NUM_ROCKETS) * 0.28;
+        float launchDur   = 0.34;
+
+        float rawLaunch = clamp((progress - launchDelay) / launchDur, 0.0, 1.0);
+        float launchFt  = rawLaunch * rawLaunch * (3.0 - 2.0 * rawLaunch); // ease-out
+
+        // Burst begins near end of launch phase, overlaps for a smooth handoff
+        float burstStart = launchDelay + launchDur * 0.82;
+        float burstDur   = 0.48;
+        float burstFt    = clamp((progress - burstStart) / burstDur, 0.0, 1.0);
+        float burst      = smoothstep(0.0, 0.10, burstFt) * (1.0 - smoothstep(0.50, 1.0, burstFt));
+
+        // Fade trail as burst starts so they don't overlap visually
+        float trailVis = 1.0 - smoothstep(0.0, 0.18, burstFt);
+
+        // --- COMET TRAIL ---
+        for (float s = 0.0; s < NUM_TRAIL; s += 1.0) {
+            // Sample the rocket's position slightly in the past for each trail dot
+            float pastProgress = progress - launchDelay - s * 0.016;
+            float pastRaw      = clamp(pastProgress / launchDur, 0.0, 1.0);
+            float pastFt       = pastRaw * pastRaw * (3.0 - 2.0 * pastRaw);
+            float pastY        = launchY + (explodeY - launchY) * pastFt;
+
+            float2 d = uv - float2(cx, pastY);
+            d.x *= aspect;
+            float dist = length(d);
+
+            float headFade = pow(1.0 - s / NUM_TRAIL, 2.0);
+            float sz       = 0.0055 * (1.0 - s / NUM_TRAIL * 0.65);
+            float dot      = clamp(sz * sz / (dist * dist + 0.00002), 0.0, 1.0);
+
+            // Sparkle shimmer along trail
+            float sparkle = 0.70 + 0.30 * sin(iTime * 28.0 + s * 1.9 + r * 6.1);
+
+            sparks += half3(1.00, 0.88, 0.45) * dot * headFade * sparkle * trailVis;
+        }
+
+        // --- BURST ---
+        half3 color = rocketColor(r);
+
+        // Detonation flash
+        float2 cd = uv - float2(cx, explodeY);
+        cd.x *= aspect;
+        float cdist = length(cd);
+        float flash = exp(-cdist * 38.0)
+                    * smoothstep(0.0, 0.05, burstFt)
+                    * (1.0 - smoothstep(0.05, 0.22, burstFt))
+                    * 5.5;
+        sparks += half3(1.0, 0.96, 0.88) * flash;
+
+        for (float p = 0.0; p < NUM_PART; p += 1.0) {
+            float angle = (p / NUM_PART) * 6.28318 + hash1(r * 13.0 + p * 0.7) * 0.28;
+            float speed = 0.11 + hash1(r * 3.17 + p * 1.13) * 0.14;
+            float move  = burstFt * burstFt * (3.0 - 2.0 * burstFt);
+            float gravY = 0.11 * burstFt * burstFt;
+
+            float px = cx + cos(angle) * speed * move;
+            float py = explodeY + sin(angle) * speed * move + gravY;
+
+            float2 d = uv - float2(px, py);
+            d.x *= aspect;
+            float dist = length(d);
+
+            float sz       = 0.007 + hash1(r * 5.0 + p * 2.3) * 0.005;
+            float particle = clamp(sz * sz / (dist * dist + 0.00002), 0.0, 1.0) * burst;
+            float tint     = hash1(r * 7.0 + p * 3.1) * 0.25;
+            sparks += mix(color, half3(1.0, 0.95, 0.80), tint) * particle;
+        }
+    }
+
+    half3 result = bg.rgb + clamp(sparks, 0.0, 3.0) * envelope;
+    return half4(clamp(result, 0.0, 1.0), bg.a);
+}

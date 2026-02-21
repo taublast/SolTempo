@@ -93,8 +93,8 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         }
 
         _equalizer.AddSample(sample);
-          _rhythmDetector?.AddSample(sample);
-          _metronome?.AddSample(sample);
+          //_rhythmDetector?.AddSample(sample);
+          //_metronome?.AddSample(sample);
 
           if (_musicBPMDetectorWrapper.IsVisible)
           {
