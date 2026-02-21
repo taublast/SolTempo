@@ -1,0 +1,509 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MusicNotes</name>
+    </assembly>
+    <members>
+        <member name="T:MusicNotes.Audio.AudioInstrumentTuner">
+            <summary>
+            Musical Note Detector (Tuner)
+            Uses AMDF (Average Magnitude Difference Function) with Parabolic Interpolation for accurate pitch.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioLevels">
+            <summary>
+            Frequency band level visualizer (ULTRA LOW CPU: peak detection with simple heuristics)
+            Uses 3-band crossover filters (Low/Mid/High) for accurate separation
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioLevelsPeak">
+            <summary>
+            ABSOLUTE LOWEST CPU: Instant peak + decay (like cheap LED meters)
+            Uses 3-band crossover filters. Displays PEAK instead of Average energy.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioLevelsVU">
+            <summary>
+            Analog-style VU meter (classic ballistics with filter bank)
+            Uses 3-band crossover for frequency separation.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioMetronome">
+            <summary>
+            Metronome - Pulses at a set BPM and shows how well drummer matches the beat
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioMusicBPMDetector">
+            <summary>
+            Music BPM Detector - Detects BPM from music (not just drums)
+            Uses autocorrelation for tempo detection in musical tracks
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioOscillograph">
+            <summary>
+            Waveform oscillograph visualizer (ZERO allocations, perfect sync)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Audio.AudioRecorder.GainFactor">
+            <summary>
+            Gain multiplier applied to raw PCM when UseGain is true.
+            </summary>
+        </member>
+        <member name="M:MusicNotes.Audio.AudioRecorder.AmplifyPcm16(System.Byte[],System.Single)">
+            <summary>
+            Amplifies PCM16 audio data in-place. Zero allocations.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioRhythmDetector">
+            <summary>
+            Rhythm Detector (BPM/Tempo Detector for drummers)
+            Detects beats and calculates BPM using onset detection
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioSoundBars">
+            <summary>
+            High-resolution frequency spectrum sound bars (music player style).
+            Uses Goertzel algorithm to compute energy at logarithmically-spaced
+            frequency bins. Bars with energy are ON, bars without are fully OFF,
+            creating an organic pattern of active/silent frequency clusters.
+            ZERO render allocations, double-buffered.
+            </summary>
+        </member>
+        <member name="F:MusicNotes.Audio.AudioSoundBars.ReleaseCoeff">
+            <summary>
+            Controls how fast a bar falls down when the audio at that frequency drops.
+            Each frame, if the new target is lower than the current value, the bar is set to current * 0.70.
+            So it loses 30% of its height per frame.
+            This prevents bars from snapping instantly to zero - they fade down smoothly over several frames.
+            </summary>
+        </member>
+        <member name="F:MusicNotes.Audio.AudioSoundBars.PeakDecay">
+            <summary>
+            Controls how fast the floating peak dot falls.
+            The dot marks the highest point a bar reached,
+            then slowly drifts down at current * 0.97 per frame (only 3% loss per frame).
+            Much slower than the bar itself, so the dot lingers near the top
+            while the bar drops away underneath it - classic "peak hold" meter behavior.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Audio.AudioWaveformBars">
+            <summary>
+            Scrolling waveform bars visualizer (music player style, like SoundCloud/Spotify).
+            Displays many thin vertical bars growing symmetrically from center.
+            New audio scrolls in from the right, older bars fade on the left.
+            ZERO allocations during render, double-buffered.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Effects.GlassBackdropEffect">
+            <summary>
+            Glass backdrop effect with customizable corner radius.
+            Applies a liquid glass shader effect that respects rounded corners.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Effects.GlassBackdropEffect.CornerRadius">
+            <summary>
+            Gets or sets the corner radius in points (density-independent units).
+            The shader will automatically convert this to pixels based on screen density.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Effects.GlassBackdropEffect.GlassDepth">
+            <summary>
+            Gets or sets the 3D depth/emboss intensity of the glass effect.
+            Controls the refraction strength for the curved appearance.
+            Range: 0.0 (flat/no distortion) to 2.0+ (very pronounced).
+            Default: 1.0 (original appearance).
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.ColorResourceNotFoundException">
+            <summary>
+            Exception thrown when a color resource cannot be found in the application resources.
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorResourceNotFoundException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of ColorResourceNotFoundException.
+            </summary>
+            <param name="colorKey">The key of the color resource that was not found.</param>
+        </member>
+        <member name="P:MusicNotes.ColorResourceNotFoundException.ColorKey">
+            <summary>
+            Gets the key of the color resource that was not found.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.AppColors">
+            <summary>
+            Auto-generated fluent helper class for accessing color resources from Colors.xaml
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Black">
+            <summary>
+            Color resource: Black (Black)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.DarkNeutral_100A">
+            <summary>
+            Color resource: DarkNeutral-100A (#03040442)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Primary">
+            <summary>
+            Color resource: Primary (#512BD4)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Secondary">
+            <summary>
+            Color resource: Secondary (#DFD8F7)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Tertiary">
+            <summary>
+            Color resource: Tertiary (#2B0B98)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.White">
+            <summary>
+            Color resource: White (White)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray100">
+            <summary>
+            Color resource: Gray100 (#E1E1E1)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray200">
+            <summary>
+            Color resource: Gray200 (#C8C8C8)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray300">
+            <summary>
+            Color resource: Gray300 (#ACACAC)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray400">
+            <summary>
+            Color resource: Gray400 (#919191)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray500">
+            <summary>
+            Color resource: Gray500 (#6E6E6E)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray600">
+            <summary>
+            Color resource: Gray600 (#404040)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray900">
+            <summary>
+            Color resource: Gray900 (#212121)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Gray950">
+            <summary>
+            Color resource: Gray950 (#141414)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Blue100Accent">
+            <summary>
+            Color resource: Blue100Accent (#3E8EED)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Blue200Accent">
+            <summary>
+            Color resource: Blue200Accent (#72ACF1)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Blue300Accent">
+            <summary>
+            Color resource: Blue300Accent (#A7CBF6)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Cyan100Accent">
+            <summary>
+            Color resource: Cyan100Accent (#28C2D1)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Cyan200Accent">
+            <summary>
+            Color resource: Cyan200Accent (#7BDDEF)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Cyan300Accent">
+            <summary>
+            Color resource: Cyan300Accent (#C3F2F4)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Yellow100Accent">
+            <summary>
+            Color resource: Yellow100Accent (#F7B548)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Yellow200Accent">
+            <summary>
+            Color resource: Yellow200Accent (#FFD590)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.Yellow300Accent">
+            <summary>
+            Color resource: Yellow300Accent (#FFE5B9)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorAccent">
+            <summary>
+            Color resource: ColorAccent (#FF0000)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorDanger">
+            <summary>
+            Color resource: ColorDanger (#FF5F5F)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorPaper">
+            <summary>
+            Color resource: ColorPaper (White)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorPrimary">
+            <summary>
+            Color resource: ColorPrimary (#512BD4)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorPrimaryDark">
+            <summary>
+            Color resource: ColorPrimaryDark (#2B0B98)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorPrimaryLight">
+            <summary>
+            Color resource: ColorPrimaryLight (#DFD8F7)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorSuccess">
+            <summary>
+            Color resource: ColorSuccess (#77DE27)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorText">
+            <summary>
+            Color resource: ColorText (#E8E3D7)
+            </summary>
+        </member>
+        <member name="P:MusicNotes.AppColors.ColorTextSecondary">
+            <summary>
+            Color resource: ColorTextSecondary (#222233)
+            </summary>
+        </member>
+        <member name="T:MusicNotes.ColorExtensions">
+            <summary>
+            Fluent extension methods for working with colors
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.WithAlpha(Microsoft.Maui.Graphics.Color,System.Single)">
+            <summary>
+            Creates a new color with the specified alpha/opacity value (0.0 to 1.0)
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.WithOpacity(Microsoft.Maui.Graphics.Color,System.Int32)">
+            <summary>
+            Creates a new color with the specified opacity percentage (0 to 100)
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.Lighten(Microsoft.Maui.Graphics.Color,System.Single)">
+            <summary>
+            Creates a lighter version of the color
+            </summary>
+            <param name="factor">Amount to lighten (0.0 to 1.0, default 0.2)</param>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.Darken(Microsoft.Maui.Graphics.Color,System.Single)">
+            <summary>
+            Creates a darker version of the color
+            </summary>
+            <param name="factor">Amount to darken (0.0 to 1.0, default 0.2)</param>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.ToHex(Microsoft.Maui.Graphics.Color)">
+            <summary>
+            Converts the color to a hex string (e.g., #FF5733)
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.ToHexWithAlpha(Microsoft.Maui.Graphics.Color)">
+            <summary>
+            Converts the color to a hex string with alpha (e.g., #FF5733AA)
+            </summary>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.FromHex(System.String)">
+            <summary>
+            Creates a Color from a hex string. Supports formats: #RGB, #RRGGBB, #AARRGGBB, RGB, RRGGBB, AARRGGBB
+            </summary>
+            <param name="hex">Hex color string with or without #</param>
+        </member>
+        <member name="M:MusicNotes.ColorExtensions.FromHexRGBA(System.String)">
+            <summary>
+            Creates a Color from RGBA hex string. Supports formats: #RRGGBBAA, RRGGBBAA
+            </summary>
+            <param name="hex">RGBA hex color string with or without #</param>
+        </member>
+        <member name="T:MusicNotes.Resources.Strings.ResStrings">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.AboutApp">
+            <summary>
+              Looks up a localized string similar to About.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnCancel">
+            <summary>
+              Looks up a localized string similar to Cancel.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnClose">
+            <summary>
+              Looks up a localized string similar to Close.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnConnect">
+            <summary>
+              Looks up a localized string similar to Connect.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnCreate">
+            <summary>
+              Looks up a localized string similar to Create.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnReset">
+            <summary>
+              Looks up a localized string similar to Reset.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnSave">
+            <summary>
+              Looks up a localized string similar to Save.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnStart">
+            <summary>
+              Looks up a localized string similar to Start.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.BtnStop">
+            <summary>
+              Looks up a localized string similar to Stop.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.MarkdownTest">
+            <summary>
+              Looks up a localized string similar to In the soon-coming __SkiaSharp__ release we could generate tagged PDF containing links and much more!.. 
+            To update the device software, follow these steps:
+            1. Download the new version of the software from the website [supadupa.com](https://google.com).
+            2. Copy the firmware file in `HEX` format corresponding to your device model to the root directory of the memory card.
+            3. Insert the memory card into the device when it is turned off.
+            4. While holding the `Mode` button, connect the device to power v [rest of string was truncated]&quot;;.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.No">
+            <summary>
+              Looks up a localized string similar to No.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.Off">
+            <summary>
+              Looks up a localized string similar to Off.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.On">
+            <summary>
+              Looks up a localized string similar to On.
+            </summary>
+        </member>
+        <member name="P:MusicNotes.Resources.Strings.ResStrings.Yes">
+            <summary>
+              Looks up a localized string similar to Yes.
+            </summary>
+        </member>
+        <member name="M:MusicNotes.UI.AudioPage.Build">
+            <summary>
+            This will be called by HotReload
+            </summary>
+        </member>
+        <member name="T:MusicNotes.UI.IAudioVisualizer">
+            <summary>
+            Interface for audio visualizers
+            </summary>
+        </member>
+        <member name="M:MusicNotes.UI.IAudioVisualizer.Render(SkiaSharp.SKCanvas,SkiaSharp.SKRect,System.Single)">
+            <summary>
+            Renders into a viewport (in pixels) on the provided canvas.
+            Visualizers should respect viewport offset/size and not assume (0,0).
+            </summary>
+        </member>
+        <member name="M:MusicNotes.UI.IAudioVisualizer.Reset">
+            <summary>
+            Will reset internal state of the visualizer, like if was stated from scratch
+            </summary>
+        </member>
+        <member name="T:MusicNotes.UI.IconFont">
+            <summary>
+            Generated by IconFont2Code: https://andreinitescu.github.io/IconFont2Code
+            </summary>
+        </member>
+        <member name="T:MusicNotes.UI.SettingsButton">
+            <summary>
+            Custom button for settings UI following the SkiaButton pattern.
+            Handles all gestures directly in ProcessGestures (no base delegation).
+            Supports pressed state (shadow + translation), hover state (border glow), and fluent chaining.
+            </summary>
+        </member>
+        <member name="M:MusicNotes.UI.SettingsButton.ProcessGestures(DrawnUi.Draw.SkiaGesturesParameters,DrawnUi.Draw.GestureEventProcessingInfo)">
+            <summary>
+            Handles all gestures directly, matching SkiaButton pattern (no base delegation).
+            </summary>
+        </member>
+        <member name="M:MusicNotes.UI.SettingsButton.OnTapped(System.Action{MusicNotes.UI.SettingsButton})">
+            <summary>
+            Register a tap callback. Instance method to route taps from the inner shape.
+            </summary>
+        </member>
+        <member name="T:MusicNotes.UI.WrappingSmartLayout">
+            <summary>
+            Layout that adapts to camera preview area and device orientation
+            </summary>
+        </member>
+        <member name="T:MusicNotes.Resource">
+            <summary>
+            Android Resource Designer class.
+            Exposes the Android Resource designer assembly into the project Namespace.
+            </summary>
+        </member>
+    </members>
+</doc>
