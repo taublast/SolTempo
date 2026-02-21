@@ -96,9 +96,6 @@
 
 
 	<ItemGroup>
-        <!--https://github.com/BretJohnson/hot-preview-->
-        <!--<PackageReference Include="HotPreview.App.Maui" Version="0.12.6" />-->
-        <PackageReference Include="AppoMobi.Maui.FastPopups" Version="1.2.1" />
         <PackageReference Include="FluentColors.Maui" Version="1.0.0.6">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -115,6 +112,9 @@
             <AutoGen>True</AutoGen>
             <DependentUpon>ResStrings.resx</DependentUpon>
         </Compile>
+        <Compile Update="UI\AudioPageSettings.xaml.cs">
+          <DependentUpon>AudioPageSettings.xaml</DependentUpon>
+        </Compile>
     </ItemGroup>
 
     <ItemGroup>
@@ -130,6 +130,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Include="UI\AudioPageSettingsPopup - Copy.xaml" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\..\..\DrawnUi.Maui\src\Maui\Addons\DrawnUi.Maui.Camera\DrawnUi.Maui.Camera.csproj" />
     </ItemGroup>
 
@@ -137,7 +141,7 @@
       <MauiXaml Update="TestRandom.xaml">
         <Generator>MSBuild:Compile</Generator>
       </MauiXaml>
-      <MauiXaml Update="UI\AudioPageSettingsPopup.xaml">
+      <MauiXaml Update="UI\AudioPageSettings.xaml">
         <Generator>MSBuild:Compile</Generator>
       </MauiXaml>
     </ItemGroup>

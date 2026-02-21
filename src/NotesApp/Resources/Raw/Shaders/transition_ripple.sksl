@@ -43,8 +43,8 @@ half4 main(float2 fragCoord) {
     float edge = 0.022;
     float show = smoothstep(shockR - edge, shockR + edge, dist);
 
-    // Inside ring: opaque black. Outside: displaced image.
-    half4 result = mix(half4(0.0, 0.0, 0.0, col.a), col, show);
+    // Inside ring: source with effect. Outside: displaced image.
+    half4 result = mix(half4(col.r * 1.275 * phase , col.g* 1.275 * phase, col.b* 1.275 * phase, col.a), col, show);
 
     // Bright cyan-white rim at the shockwave boundary (both sides)
     float rim = exp(-ringDist * ringDist * 25.0) * phase * 0.65;

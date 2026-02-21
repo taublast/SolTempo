@@ -29,7 +29,7 @@ half4 main(float2 fragCoord) {
 
     // Flash to white as zoom peaks — at full brightness rgb clamps to (1,1,1) = white.
     // Keep alpha = col.a so the control stays opaque; no background bleed-through.
-    float brightness = 1.0 + phase * 2.5;
+    float brightness = 1.0 + phase * 3.5;
 
     return half4(clamp(col.rgb * brightness, 0.0, 1.0), col.a);
 }

@@ -6,13 +6,28 @@ using MusicNotes.UI;
 
 namespace ShadersCamera.Views;
 
-public partial class AudioPageSettingsPopup 
+public partial class AudioPageSettings : SkiaLayout
 {
     private readonly AudioPage _parentPage;
 
     private bool isInitializing;
 
     AudioRecorder Recorder => _parentPage?.Recorder;
+
+    public void Close ()
+    {
+        UserSettings.FillFromHardware(Recorder);
+        UserSettings.Save();
+
+        IsVisible = false;
+    }
+
+    public void Show()
+    {
+        _ = UpdateControls();
+
+        IsVisible = true;
+    }
 
     async Task <string> GetAudioSourceText(AudioRecorder CameraControl)
     {
@@ -42,13 +57,11 @@ public partial class AudioPageSettingsPopup
         isInitializing = false;
     }
 
-    public AudioPageSettingsPopup(AudioPage page)
+    public AudioPageSettings(AudioPage page)
 	{
 		InitializeComponent();
 
         _parentPage = page;
-
-        UserSettings.FillFromHardware(Recorder);
 
         _ = UpdateControls();
     }
@@ -61,13 +74,6 @@ public partial class AudioPageSettingsPopup
         Recorder.UseGain = value;
     }
 
-    protected override Task OnDismissedByTappingOutsideOfPopup(CancellationToken token = new CancellationToken())
-    {
-        UserSettings.FillFromHardware(Recorder);
-        UserSettings.Save();
-
-        return base.OnDismissedByTappingOutsideOfPopup(token);
-    }
 
  
     private void SelectAudioSource(object sender, ControlTappedEventArgs e)
@@ -131,5 +137,10 @@ public partial class AudioPageSettingsPopup
         });
 
 
+    }
+
+    private void AudioPageSettings_OnTapped(object sender, ControlTappedEventArgs e)
+    {
+        Close();
     }
 }

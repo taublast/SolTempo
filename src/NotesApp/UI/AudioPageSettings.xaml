@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<draw:SkiaLayout
+    x:Class="ShadersCamera.Views.AudioPageSettings"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
+    xmlns:effects="clr-namespace:MusicNotes.Effects"
+    BackgroundColor="#66000000"
+    HorizontalOptions="Fill"
+    Tapped="AudioPageSettings_OnTapped"
+    VerticalOptions="Fill">
+
+    <draw:SkiaShape
+        BackgroundColor="#CC000000"
+        CornerRadius="10"
+        HorizontalOptions="Center"
+        MaximumHeightRequest="500"
+        StrokeColor="LightPink"
+        StrokeWidth="1"
+        UseCache="Operations"
+        VerticalOptions="Center"
+        WidthRequest="320">
+
+        <draw:SkiaLayer>
+
+            <draw:SkiaBackdrop
+                Blur="0"
+                HorizontalOptions="Fill"
+                IsVisible="False"
+                VerticalOptions="Fill">
+                <draw:SkiaControl.VisualEffects>
+                    <effects:GlassBackdropEffect
+                        BlurStrength="1.0"
+                        CornerRadius="10"
+                        GlassDepth="1.66"
+                        GlassOpacity="0.9"
+                        ShaderSource="Shaders\glass.sksl" />
+                </draw:SkiaControl.VisualEffects>
+            </draw:SkiaBackdrop>
+
+            <draw:SkiaLayout
+                Margin="24"
+                HorizontalOptions="Fill"
+                Spacing="32"
+                Type="Column"
+                UseCache="Operations"
+                VerticalOptions="Start">
+
+                <draw:SkiaRichLabel
+                    FontFamily="FontTextBold"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="Settings"
+                    TextColor="White"
+                    UseCache="Operations" />
+
+                <!--  SOURCE  -->
+                <draw:SkiaLayout
+                    HorizontalOptions="Fill"
+                    Tapped="SelectAudioSource"
+                    UseCache="Operations">
+
+                    <draw:SkiaRichLabel
+                        Text="Source"
+                        TextColor="White"
+                        UseCache="Operations"
+                        VerticalOptions="Center" />
+
+                    <draw:SkiaRichLabel
+                        x:Name="LabelSource"
+                        HeightRequest="28"
+                        HorizontalOptions="End"
+                        HorizontalTextAlignment="End"
+                        MaxLines="1"
+                        TextColor="White"
+                        WidthRequest="150" />
+
+                </draw:SkiaLayout>
+
+                <!--  GAIN  -->
+                <draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations">
+
+                    <draw:SkiaRichLabel
+                        Text="Use Gain"
+                        TextColor="White"
+                        UseCache="Operations"
+                        VerticalOptions="Center" />
+
+                    <draw:SkiaSwitch
+                        x:Name="SwitchGain"
+                        ColorFrameOn="LightPink"
+                        HeightRequest="28"
+                        HorizontalOptions="End"
+                        Toggled="UseGainSwitch_OnToggled"
+                        WidthRequest="45" />
+
+                </draw:SkiaLayout>
+
+
+                <!--  HELP  -->
+                <!--<draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations" Tapped="TappedSelectHelp">
+
+                            <draw:SkiaRichLabel
+                                UseCache="Operations"
+                                Text="Help" />
+
+                            <draw:SkiaRichLabel
+                                Opacity="0.75"
+                                HorizontalOptions="End"
+                                VerticalOptions="Center"
+                                Text="❔" />
+
+                        </draw:SkiaLayout>-->
+
+            </draw:SkiaLayout>
+
+        </draw:SkiaLayer>
+
+    </draw:SkiaShape>
+
+</draw:SkiaLayout>

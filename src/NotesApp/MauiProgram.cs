@@ -1,6 +1,5 @@
 ﻿global using DrawnUi.Draw;
 global using SkiaSharp;
-using FastPopups;
 using Microsoft.Extensions.Logging;
 
 namespace MusicNotes
@@ -42,7 +41,6 @@ namespace MusicNotes
  
                 });
 
-            builder.AddPopups();
             builder.UseDrawnUi(new()
             {
                 //portrait

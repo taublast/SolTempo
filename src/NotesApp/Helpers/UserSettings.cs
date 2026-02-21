@@ -42,7 +42,7 @@ namespace MusicNotes.Helpers
             }
             catch
             {
-                // ignored
+               Super.Log($"Failed to save settings: {json}");
             }
         }
 

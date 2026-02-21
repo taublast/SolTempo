@@ -1,8 +1,6 @@
 using AppoMobi.Specials;
-using DrawnUi.Camera;
 using DrawnUi.Controls;
 using DrawnUi.Views;
-using FastPopups;
 using MusicNotes.Audio;
 using MusicNotes.Effects;
 using MusicNotes.Helpers;
@@ -38,6 +36,7 @@ namespace MusicNotes.UI
         private AudioVisualizer _musicBPMDetector;
         private SkiaControl _musicBPMDetectorWrapper;
         private AudioVisualizer _equalizer;
+        private AudioPageSettings _settingsPopup;
 
         private void CreateContent()
         {
@@ -48,7 +47,7 @@ namespace MusicNotes.UI
             {
                 mainStack = new SkiaLayout
                 {
-                    BackgroundColor = Colors.HotPink,
+                    BackgroundColor = Colors.Black,
                     HorizontalOptions = LayoutOptions.Fill,
                     VerticalOptions = LayoutOptions.Fill,
                     Children =
@@ -176,7 +175,6 @@ namespace MusicNotes.UI
                             }
                         }.Assign(out _musicBPMDetectorWrapper),
 
-
                         new AudioVisualizer(new AudioSoundBars())
                         {
                             BackgroundColor = Color.Parse("#22000000"),
@@ -270,8 +268,8 @@ namespace MusicNotes.UI
 
                                            var fx = new TransitionEffect
                                            { 
-                                               ShaderSource = @"Shaders\transition_iris.sksl",
-                                               //ShaderSource = @"Shaders\transition_ripple.sksl",
+                                               //ShaderSource = @"Shaders\transition_iris.sksl",
+                                               ShaderSource = @"Shaders\transition_ripple.sksl",
                                                //ShaderSource = @"Shaders\transition_swirl.sksl",
                                                //ShaderSource = @"Shaders\transition_zoom.sksl",
                                                DurationMs = 600
@@ -331,11 +329,12 @@ namespace MusicNotes.UI
                                         }
                                         .OnTapped(me =>
                                         {
-                                            MainThread.BeginInvokeOnMainThread(() =>
-                                            {
-                                                var popup = new AudioPageSettingsPopup(this);
-                                                this.ShowPopup(popup);
-                                            });
+                                            _settingsPopup?.Show();
+                                            //MainThread.BeginInvokeOnMainThread(() =>
+                                            //{
+                                            //    var popup = new AudioPageSettingsPopup(this);
+                                            //    this.ShowPopup(popup);
+                                            //});
                                             //ToggleSettingsDrawer();
                                         }),
 
@@ -426,6 +425,10 @@ namespace MusicNotes.UI
                             },
                         },
 
+                        new AudioPageSettings(this)
+                        {
+                            IsVisible=false
+                        }.Assign(out _settingsPopup)
                     }
                 };
             }
