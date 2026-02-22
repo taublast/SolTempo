@@ -1,0 +1,29 @@
+// Transition: Fade to Color
+// The image fades uniformly to black at the midpoint (content swap),
+// then fades back in to reveal the new content. The smoothstep keeps
+// the image bright for most of the animation and dips quickly to black.
+//
+// Ported from gl-transitions "fadecolor" by gre (MIT License).
+// Adapted for single-texture hide→reveal pattern.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4  bg         = iImage1.eval(inputCoord);
+
+    // phase: 0→1→0  (1 = fully black at progress 0.5)
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Smooth ease so the image stays bright for longer and dips quickly to black
+    float fade = smoothstep(0.0, 1.0, phase);
+
+    return half4(bg.rgb * (1.0 - fade), bg.a);
+}

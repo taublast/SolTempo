@@ -15,6 +15,8 @@ public class CelebrationEffect : AnimatedShaderEffect
     public CelebrationEffect()
     {
         ShaderSource = @"Shaders\celebrate_starburst.sksl";
+        UseBackground = PostRendererEffectUseBackgroud.Never;
+        BlendMode = SKBlendMode.Plus; // additive — confetti/sparks glow on top of background
     }
 
     /// <summary>

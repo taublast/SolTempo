@@ -1,0 +1,39 @@
+// Transition: Color Phase
+// Each RGB channel fades to black at a slightly different time, producing a
+// brief chromatic shift as the image hides (0→0.5) and reveals (0.5→1).
+// Red disappears first, green in the middle, blue last.
+//
+// Ported from gl-transitions "colorphase" by gre (MIT License).
+// Adapted for single-texture hide→reveal pattern.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4  bg         = iImage1.eval(inputCoord);
+
+    // phase: 0→1→0  (1 = fully black at progress 0.5)
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // Each channel fades out over a different sub-range of phase [0, 1]
+    // R: fades over [0.0, 0.6]  — disappears earliest
+    // G: fades over [0.2, 0.8]  — disappears in the middle
+    // B: fades over [0.4, 1.0]  — disappears last
+    float rFade = smoothstep(0.0, 0.6, phase);
+    float gFade = smoothstep(0.2, 0.8, phase);
+    float bFade = smoothstep(0.4, 1.0, phase);
+
+    return half4(
+        bg.r * (1.0 - rFade),
+        bg.g * (1.0 - gFade),
+        bg.b * (1.0 - bFade),
+        bg.a
+    );
+}

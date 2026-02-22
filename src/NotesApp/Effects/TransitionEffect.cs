@@ -21,6 +21,11 @@ namespace MusicNotes.Effects;
 /// </summary>
 public class TransitionEffect : AnimatedShaderEffect
 {
+    public TransitionEffect()
+    {
+        UseBackground = PostRendererEffectUseBackgroud.Once; // snapshot taken once at Play(), frozen for animation
+    }
+
     /// <summary>
     /// Normalized center position of the effect (0.0–1.0 in each axis).
     /// Default (0.5, 0.44) puts the center slightly above mid-screen.
@@ -40,10 +45,16 @@ public class TransitionEffect : AnimatedShaderEffect
     /// Starts the hide→reveal animation on the given parent control.
     /// Safe to call multiple times — restarts from zero each time.
     /// </summary>
-    public override void Play(SkiaControl parent)
+    public override void Play()
     {
         Animator?.Stop();
-        Animator ??= new RangeAnimator(parent);
+
+        if (Parent == null)
+        {
+            return;
+        }
+        
+        Animator ??= new RangeAnimator(Parent);
 
         Progress = 0.0;
         _midpointFired = false;

@@ -1,18 +1,17 @@
-// Celebration: Tumbling Confetti
-// Rectangular paper pieces in festive colors rain down and tumble as they fall.
-// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+// Celebration: Tumbling Confetti - Optimized
+// Rectangular paper pieces rain down and tumble gently
+// Additive blend expected (SKBlendMode.Plus)
 
 uniform float4 iMouse;
 uniform float  iTime;
 uniform float2 iResolution;
 uniform float2 iImageResolution;
-uniform shader iImage1;
 uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
 
-const float PI  = 3.14159265359;
-const float NUM = 48.0;
+const float PI = 3.14159265359;
+const float NUM = 16.0;           // ← tune: 12–20, 16 often best balance
 
 float hash1(float n) {
     return fract(sin(n) * 43758.5453123);
@@ -20,72 +19,73 @@ float hash1(float n) {
 
 half3 festiveColor(float t) {
     float h = fract(t);
-    if (h < 0.167) return half3(1.00, 0.20, 0.20); // red
-    if (h < 0.333) return half3(1.00, 0.82, 0.00); // gold
-    if (h < 0.500) return half3(0.15, 0.85, 0.30); // green
-    if (h < 0.667) return half3(0.25, 0.55, 1.00); // blue
-    if (h < 0.833) return half3(1.00, 0.35, 0.80); // pink
-    return          half3(0.65, 0.20, 1.00);        // purple
+    if (h < 0.167) return half3(1.00, 0.20, 0.20);
+    if (h < 0.333) return half3(1.00, 0.82, 0.00);
+    if (h < 0.500) return half3(0.15, 0.85, 0.30);
+    if (h < 0.667) return half3(0.25, 0.55, 1.00);
+    if (h < 0.833) return half3(1.00, 0.35, 0.80);
+    return          half3(0.65, 0.20, 1.00);
 }
 
 half4 main(float2 fragCoord) {
     float2 inputCoord = fragCoord - iOffset;
-    half4 bg = iImage1.eval(inputCoord);
-
     float2 uv = inputCoord / iImageResolution;
     float aspect = iImageResolution.x / iImageResolution.y;
 
     // Global envelope: fast in, long hold, fade out
-    float envelope = smoothstep(0.0, 0.06, progress) * (1.0 - smoothstep(0.88, 1.0, progress));
+    float envelope = smoothstep(0.0, 0.06, progress) *
+                     (1.0 - smoothstep(0.88, 1.0, progress));
+
+    if (envelope < 0.005) {
+        return half4(0.0);  // tiny early-out help
+    }
 
     half3 confetti = half3(0.0);
 
     for (float i = 0.0; i < NUM; i += 1.0) {
-        // Each piece starts above the screen at a random x position
         float startX = hash1(i * 1.13 + 0.1);
         float startY = -0.04 - hash1(i * 2.77 + 0.5) * 0.18;
 
-        // Random horizontal drift and fall speed
         float vx = (hash1(i * 3.31 + 1.0) - 0.5) * 0.55;
-        float vy =  0.55 + hash1(i * 4.19 + 2.0) * 0.80;
+        float vy = 0.55 + hash1(i * 4.19 + 2.0) * 0.80;
 
-        // Staggered launch: pieces fall in over the first ~60% of animation
         float delay = hash1(i * 5.17 + 3.0) * 0.60;
-        float t = clamp((progress - delay) / (1.0 - delay), 0.0, 1.0);
+        float t = saturate((progress - delay) / (1.0 - delay));
 
-        // Piece position — quadratic gravity
         float px = startX + vx * t;
         float py = startY + vy * t * t;
 
-        // Piece dimensions (wide flat rectangle like paper confetti)
-        float pw = 0.022 + hash1(i * 9.41 + 6.0) * 0.016; // half-width
-        float ph = pw * (0.30 + hash1(i * 11.7 + 7.0) * 0.20); // half-height (thinner)
+        // Piece size – slightly randomized rectangles
+        float pw = 0.022 + hash1(i * 9.41 + 6.0) * 0.016;     // half-width
+        float ph = pw * (0.30 + hash1(i * 11.7 + 7.0) * 0.20); // half-height
 
-        // Tumble: rotation accelerates with fall
-        float angSpeed = (hash1(i * 7.11 + 4.0) - 0.5) * 18.0;
+        // Tumble: gentler spin
+        float angSpeed = (hash1(i * 7.11 + 4.0) - 0.5) * 6.0;  // ← reduced from 18!
         float angle    = hash1(i * 8.23 + 5.0) * PI * 2.0 + angSpeed * t;
 
-        // Transform UV into this piece's local space
+        // Local space
         float2 d = uv - float2(px, py);
         d.x *= aspect;
 
-        float ca = cos(angle), sa = sin(angle);
-        float lx =  d.x * ca + d.y * sa;
-        float ly = -d.x * sa + d.y * ca;
+        // Rotation – vec2 trick often fastest on mobile
+        vec2 sc = vec2(sin(angle), cos(angle));
+        float lx = d.x * sc.y + d.y * sc.x;
+        float ly = -d.x * sc.x + d.y * sc.y;
 
-        // Soft rectangle SDF — 1 inside, 0 outside, with a thin anti-alias band
-        float rx = 1.0 - smoothstep(pw * 0.72, pw, abs(lx));
-        float ry = 1.0 - smoothstep(ph * 0.72, ph, abs(ly));
-        float piece = rx * ry;
+        // Cheap soft rect (no smoothstep = big win)
+        float rx = saturate(1.0 - abs(lx) / pw * 1.35);
+        float ry = saturate(1.0 - abs(ly) / ph * 1.35);
+        float piece = rx * ry;  // or min(rx, ry) for rounder corners feel
 
-        // Slight shimmer: piece brightens at certain angles (glossy paper)
-        float gloss = 0.7 + 0.3 * abs(sin(angle * 2.0));
+        // Optional cheap gloss without trig: edge brightening
+        float gloss = 0.85 + 0.3 * (1.0 - max(abs(lx)/pw, abs(ly)/ph));
 
         half3 color = festiveColor(hash1(i * 6.37 + 7.0));
         confetti += color * piece * gloss;
     }
 
-    // Additive blend, clamped to avoid burning out
-    half3 result = bg.rgb + clamp(confetti, 0.0, 1.5) * envelope;
-    return half4(clamp(result, 0.0, 1.0), bg.a);
+    confetti *= envelope;
+    confetti = saturate(confetti);  // safer than clamp for additive
+
+    return half4(confetti, 0.0);
 }

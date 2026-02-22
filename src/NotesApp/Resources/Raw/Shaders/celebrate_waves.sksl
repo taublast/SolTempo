@@ -6,7 +6,6 @@ uniform float4 iMouse;
 uniform float  iTime;
 uniform float2 iResolution;
 uniform float2 iImageResolution;
-uniform shader iImage1;
 uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
@@ -18,7 +17,6 @@ half3 hueToRgb(float h) {
 
 half4 main(float2 fragCoord) {
     float2 inputCoord = fragCoord - iOffset;
-    half4 bg = iImage1.eval(inputCoord);
 
     float2 uv = inputCoord / iImageResolution;
     float2 centered = uv - iCenter;
@@ -62,6 +60,6 @@ half4 main(float2 fragCoord) {
     float burstGlow = exp(-dist * 12.0) * smoothstep(0.0, 0.15, progress) * (1.0 - smoothstep(0.30, 0.55, progress));
     ringGlow += half3(1.0, 0.9, 0.8) * burstGlow * 1.5;
 
-    half3 result = bg.rgb + ringGlow * envelope * 1.3;
-    return half4(result, bg.a);
+    // Additive overlay — blended with SKBlendMode.Plus by the renderer
+    return half4(clamp(ringGlow * envelope * 1.3, 0.0, 1.0), 0.0);
 }

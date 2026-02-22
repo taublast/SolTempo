@@ -6,28 +6,85 @@ using MusicNotes.UI;
 
 namespace ShadersCamera.Views;
 
-public partial class AudioPageSettings : SkiaLayout
+public partial class AudioPageSettings : SkiaLayer
 {
     private readonly AudioPage _parentPage;
 
     private bool isInitializing;
 
+    private AnimatedShaderEffect _entrance;
+    private AnimatedShaderEffect _exit;
+
     AudioRecorder Recorder => _parentPage?.Recorder;
+
+    public void Show()
+    {
+        _ = UpdateControls();
+
+
+        if (_entrance == null)
+        {
+            _entrance = new AnimatedShaderEffect()
+            {
+                UseBackground = PostRendererEffectUseBackgroud.Once,
+                ShaderSource = @"Shaders\appear_orb.sksl",
+                DurationMs = 200
+            };
+            _entrance.Completed += (sender, args) =>
+            {
+                Animated.VisualEffects.Remove(_entrance);
+            };
+        }
+
+        if (!Animated.VisualEffects.Contains(_entrance))
+        {
+            Animated.VisualEffects.Add(_entrance);
+        }
+
+        IsVisible = true;
+        _entrance.Play();
+
+    }
 
     public void Close ()
     {
         UserSettings.FillFromHardware(Recorder);
         UserSettings.Save();
 
-        IsVisible = false;
+        if (_exit == null)
+        {
+            _exit = new AnimatedShaderEffect()
+            {
+                UseBackground = PostRendererEffectUseBackgroud.Once,
+                ShaderSource = @"Shaders\exit_orb.sksl",
+                DurationMs=200
+            };
+            _exit.Completed += (sender, args) =>
+            {
+                IsVisible = false;
+                Animated.VisualEffects.Remove(_exit);
+            };
+        }
+
+        if (!Animated.VisualEffects.Contains(_exit))
+        {
+            Animated.VisualEffects.Add(_exit);
+            _exit.Play();
+        }
+
     }
 
-    public void Show()
+    public override void OnWillDisposeWithChildren()
     {
-        _ = UpdateControls();
+        base.OnWillDisposeWithChildren();
 
-        IsVisible = true;
+        _exit?.Dispose();
+        _exit = null;
+        _entrance?.Dispose();
+        _entrance = null;
     }
+
+
 
     async Task <string> GetAudioSourceText(AudioRecorder CameraControl)
     {

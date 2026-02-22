@@ -24,10 +24,6 @@ float roundedBox(float2 uv, float2 center, float2 size, float radius) {
     return length(max(q, 0.0)) - radius;
 }
 
-/// <summary>
-/// Blurs background using gaussian kernel
-/// </summary>
-
 half3 blurBackground(float2 uv) {
     float2 step = 2.8 * iBlurStrength / iImageResolution;   // ← was 2.2, can try 2.5–3.2
 
@@ -54,33 +50,7 @@ half3 blurBackground(float2 uv) {
 
     return sum;
 }
-
-/*
-// faster version with reduced kernel size
-half3 blurBackground(float2 uv) {
-    half3 result = half3(0.0);
-    float total = 0.0;
-    const int r = 1;                // tune between 1–>2 for look vs speed
-    float sigma = 1.2;              // tune between ~1.2 –> 2.5 for look vs speed
-
-    for (int x = -r; x <= r; x++) {
-        for (int y = -r; y <= r; y++) {
-            float fx = float(x);
-            float fy = float(y);
-            float2 off = float2(fx, fy) * 1.8 * iBlurStrength / iImageResolution;
-
-            float distSq = fx*fx + fy*fy;
-            float denom = 2.0 * sigma * sigma;
-            float w = exp( -distSq / denom );
-
-            result += iImage1.eval(uv + off).rgb * half3(w);
-            total += w;
-        }
-    }
-    return result / half3(total);
-}
-*/
-
+ 
 /// <summary>
 /// Calculates surface normal for refraction
 /// </summary>
@@ -101,79 +71,83 @@ float2 getNormal(float2 uv, float2 center, float2 size, float radius) {
     return normalize(gradient);
 }
 
-// ────────────────────────────────────────────────────────────────
 half4 main(float2 fragCoord) {
-// ────────────────────────────────────────────────────────────────
-
     float2 renderingScale = iImageResolution.xy / iResolution.xy;
+    // fragCoord and iOffset are both in device pixels, so inputCoord is pixel-relative.
+    // renderingScale is NOT applied here - it's used only for converting point-based values to pixels.
     float2 inputCoord = fragCoord - iOffset;
-
-    // Minimal setup needed to compute distance & mask
-    float radiusInPixels = iCornerRadius * renderingScale.x;
-
-    float2 center = iImageResolution * 0.5;
-    float2 size   = (iImageResolution - EDGE_DISTANCE * 2.0) * 0.5;
-
-    float dist = roundedBox(inputCoord, center, size, radiusInPixels);
-
-    float aaWidth = 2.0;
-    float alpha   = 1.0 - smoothstep(-aaWidth, aaWidth, dist);
-
-    // skip everything for background pixels
-    if (alpha <= 0.001) {
-        return iImage1.eval(inputCoord);
-    }
-
     float2 uv = inputCoord / iImageResolution;
 
-    // Now safe to compute perspective-corrected local coordinates
+    // Convert corner radius from points to pixels using the rendering scale
+    float radiusInPixels = iCornerRadius * renderingScale.x;
+
+    // Create glass panel with controllable distance from edges
+    float2 center = iImageResolution * 0.5;
+    float2 size = (iImageResolution - EDGE_DISTANCE * 2.0) * 0.5;
+    
     float2 local = (inputCoord - center) / size;
     local.y *= iImageResolution.x / iImageResolution.y;
 
+    float dist = roundedBox(inputCoord, center, size, radiusInPixels);
+
+    // Calculate smooth alpha mask for antialiasing at edges
+    // smoothstep from 0 to 2 pixels provides smooth transition
+    float aaWidth = 2.0;  // Antialiasing width in pixels
+    float alpha = 1.0 - smoothstep(-aaWidth, aaWidth, dist);
+
+    // If completely outside glass area, return original
+    if (alpha <= 0.0) {
+        return iImage1.eval(inputCoord);
+    }
+
     // Radial curvature refraction
-    float r = clamp(length(local), 0.0, 1.0);  // removed redundant *1.0
-    float curvature = pow(r, 1.0);             // note: this is currently identity — could be removed
+    float r = clamp(length(local * 1.0), 0.0, 1.0);
+    float curvature = pow(r, 1.0);
     float2 domeNormal = normalize(local) * curvature;
     float eta = 1.0 / 1.5;
     float2 incident = -domeNormal;
     float2 refractVec = refract(incident, domeNormal, eta);
-    float2 curvedRefractUV  = inputCoord + refractVec  * (30.0 * renderingScale.x) * iGlassDepth; //30
-
+    float2 curvedRefractUV = inputCoord + refractVec * 30.0 * iGlassDepth * renderingScale.x;
+    
     // Edge contour refraction
     float contourFalloff = exp(-abs(dist) * 0.4);
     float2 normal = getNormal(inputCoord, center, size, radiusInPixels);
     float2 domeNormalContour = normal * pow(contourFalloff, 1.5);
     float2 refractVecContour = refract(float2(0.0), domeNormalContour, eta);
-    float2 uvContour = inputCoord + refractVecContour * (35.0 * renderingScale.x) * iGlassDepth * contourFalloff; //35
-
+    float2 uvContour = inputCoord + refractVecContour * 35.0 * iGlassDepth * contourFalloff * renderingScale.x;
+    
     // Blend refractions
-    float edgeWeight    = smoothstep(0.0, 1.0, abs(dist));
-    float radialWeight  = smoothstep(0.5, 1.0, r);
-    float combinedWeight = clamp(edgeWeight - radialWeight * 0.5, 0.0, 1.0);
+    float edgeWeight = smoothstep(0.0, 1.0, abs(dist));
+    float radialWeight = smoothstep(0.5, 1.0, r);
+    float combinedWeight = clamp((edgeWeight * 1.0) + (-radialWeight * 0.5), 0.0, 1.0);
     float2 refractUV = mix(curvedRefractUV, uvContour, combinedWeight);
-
+    
     half3 refracted = iImage1.eval(refractUV).rgb;
-    half3 blurred   = blurBackground(refractUV);
-    half3 base      = mix(refracted, blurred, 0.5);
-
-    // Shadow
-    float edgeFalloff  = smoothstep(0.01, 0.0, dist);
+    half3 blurred = blurBackground(refractUV);
+    half3 base = mix(refracted, blurred, 0.5);
+    
+    // Shadow (scales with depth for enhanced 3D effect)
+    float edgeFalloff = smoothstep(0.01, 0.0, dist);
     float verticalBand = 1.0 - smoothstep(-1.5, -0.2, local.y);
-    float topShadow    = edgeFalloff * verticalBand;
-    half3 shadowColor  = half3(0.0);
-    base = mix(base, shadowColor, topShadow * 0.25 * iGlassDepth);
-
-    // Edge glow
-    float glowWidthPixels = 11.0 * iGlassDepth * renderingScale.x;
+    float topShadow = edgeFalloff * verticalBand;
+    half3 shadowColor = half3(0.0);
+    base = mix(base, shadowColor, topShadow * 0.1 * iGlassDepth);
+    
+    // Edge glow (scales with depth for more pronounced flare)
+    // Use density-independent points (3pt base), multiply by renderingScale for actual pixels
+    float glowWidthPixels = 3.0 * iGlassDepth * renderingScale.x;
     float edge = 1.0 - smoothstep(0.0, glowWidthPixels, dist * -2.0);
-    half3 edgeSample = iImage1.eval(uvContour).rgb;
-    half3 glow = mix(edgeSample * 5.0, half3(0.5), 0.1);
-    half3 color = mix(base * 1.1, glow * 1.1, edge * 0.25 * iGlassDepth);
 
-    // Tint
+    // Sample the refracted edge background and brighten it for the rim highlight.
+    // This makes the border react to the underlying content rather than always being gray.
+    half3 edgeSample = iImage1.eval(uvContour).rgb;
+    half3 glow = mix(edgeSample * 2.0, half3(0.9), 0.35);
+    half3 color = mix(base, glow * 1.1, edge * 0.75 );
+
+    // Apply glass color tint (iGlassColor.a = 0 means no tint, nothing changes)
     color = mix(color, iGlassColor.rgb, iGlassColor.a);
 
-    // Final composite
+    // Blend with original using alpha mask for smooth antialiased edges
     half4 originalColor = iImage1.eval(inputCoord);
     half3 finalColor = mix(originalColor.rgb, color, alpha);
     float finalAlpha = originalColor.a * (iGlassOpacity * alpha + (1.0 - alpha));

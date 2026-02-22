@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<draw:SkiaLayout
+<draw:SkiaLayer
     x:Class="ShadersCamera.Views.AudioPageSettings"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -11,95 +11,109 @@
     Tapped="AudioPageSettings_OnTapped"
     VerticalOptions="Fill">
 
-    <draw:SkiaShape
-        BackgroundColor="#CC000000"
-        CornerRadius="10"
-        HorizontalOptions="Center"
-        MaximumHeightRequest="500"
-        StrokeColor="LightPink"
-        StrokeWidth="1"
-        UseCache="Operations"
-        VerticalOptions="Center"
-        WidthRequest="320">
+    <draw:SkiaLayer x:Name="Animated" VerticalOptions="Fill" UseCache="Image">
 
-        <draw:SkiaLayer>
+        <!--<draw:SkiaControl.VisualEffects>
 
-            <draw:SkiaBackdrop
+            <effects:PlayOnAppearingShaderEffect DurationMs="300" 
+                                                 ShaderSource="Shaders\appear_orb.sksl" />
+
+        </draw:SkiaControl.VisualEffects>-->
+
+        <draw:SkiaShape
+            BackgroundColor="#CC000000"
+            CornerRadius="32"
+            HorizontalOptions="Center"
+            MaximumHeightRequest="500"
+            StrokeColor="Goldenrod"
+            StrokeWidth="1"
+            UseCache="Operations"
+            VerticalOptions="Center"
+            WidthRequest="320">
+
+
+
+            <draw:SkiaLayer>
+
+
+                <!--<draw:SkiaBackdrop
                 Blur="0"
                 HorizontalOptions="Fill"
                 IsVisible="False"
                 VerticalOptions="Fill">
                 <draw:SkiaControl.VisualEffects>
+
                     <effects:GlassBackdropEffect
                         BlurStrength="1.0"
                         CornerRadius="10"
                         GlassDepth="1.66"
                         GlassOpacity="0.9"
                         ShaderSource="Shaders\glass.sksl" />
+
                 </draw:SkiaControl.VisualEffects>
-            </draw:SkiaBackdrop>
+            </draw:SkiaBackdrop>-->
 
-            <draw:SkiaLayout
-                Margin="24"
-                HorizontalOptions="Fill"
-                Spacing="32"
-                Type="Column"
-                UseCache="Operations"
-                VerticalOptions="Start">
-
-                <draw:SkiaRichLabel
-                    FontFamily="FontTextBold"
-                    FontSize="18"
-                    HorizontalOptions="Center"
-                    Text="Settings"
-                    TextColor="White"
-                    UseCache="Operations" />
-
-                <!--  SOURCE  -->
                 <draw:SkiaLayout
+                    Margin="24"
+                    BlockGesturesBelow="True"
                     HorizontalOptions="Fill"
-                    Tapped="SelectAudioSource"
-                    UseCache="Operations">
+                    Spacing="32"
+                    Type="Column"
+                    UseCache="Operations"
+                    VerticalOptions="Start">
 
                     <draw:SkiaRichLabel
-                        Text="Source"
+                        FontFamily="FontTextBold"
+                        FontSize="18"
+                        HorizontalOptions="Center"
+                        Text="Settings"
                         TextColor="White"
-                        UseCache="Operations"
-                        VerticalOptions="Center" />
+                        UseCache="Operations" />
 
-                    <draw:SkiaRichLabel
-                        x:Name="LabelSource"
-                        HeightRequest="28"
-                        HorizontalOptions="End"
-                        HorizontalTextAlignment="End"
-                        MaxLines="1"
-                        TextColor="White"
-                        WidthRequest="150" />
+                    <!--  SOURCE  -->
+                    <draw:SkiaLayout
+                        HorizontalOptions="Fill"
+                        Tapped="SelectAudioSource"
+                        UseCache="Operations">
 
-                </draw:SkiaLayout>
+                        <draw:SkiaRichLabel
+                            Text="Source"
+                            TextColor="White"
+                            UseCache="Operations"
+                            VerticalOptions="Center" />
 
-                <!--  GAIN  -->
-                <draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations">
+                        <draw:SkiaRichLabel
+                            x:Name="LabelSource"
+                            HeightRequest="28"
+                            HorizontalOptions="End"
+                            MaxLines="1"
+                            TextColor="White"
+                            MaximumWidthRequest="150" />
 
-                    <draw:SkiaRichLabel
-                        Text="Use Gain"
-                        TextColor="White"
-                        UseCache="Operations"
-                        VerticalOptions="Center" />
+                    </draw:SkiaLayout>
 
-                    <draw:SkiaSwitch
-                        x:Name="SwitchGain"
-                        ColorFrameOn="LightPink"
-                        HeightRequest="28"
-                        HorizontalOptions="End"
-                        Toggled="UseGainSwitch_OnToggled"
-                        WidthRequest="45" />
+                    <!--  GAIN  -->
+                    <draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations" Padding="1,0">
 
-                </draw:SkiaLayout>
+                        <draw:SkiaRichLabel
+                            Text="Use Gain"
+                            TextColor="White"
+                            UseCache="Operations"
+                            VerticalOptions="Center" />
+
+                        <draw:SkiaSwitch
+                            x:Name="SwitchGain"
+                            ColorFrameOn="Goldenrod"
+                            HeightRequest="28"
+                            HorizontalOptions="End"
+                            Toggled="UseGainSwitch_OnToggled"
+                            WidthRequest="46" />
+
+                    </draw:SkiaLayout>
 
 
-                <!--  HELP  -->
-                <!--<draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations" Tapped="TappedSelectHelp">
+                    <!--  HELP  -->
+                    <!--<draw:SkiaLayout HorizontalOptions="Fill" UseCache="Operations" Tapped="TappedSelectHelp">
 
                             <draw:SkiaRichLabel
                                 UseCache="Operations"
@@ -113,10 +127,11 @@
 
                         </draw:SkiaLayout>-->
 
-            </draw:SkiaLayout>
+                </draw:SkiaLayout>
 
-        </draw:SkiaLayer>
+            </draw:SkiaLayer>
 
-    </draw:SkiaShape>
+        </draw:SkiaShape>
+    </draw:SkiaLayer>
+</draw:SkiaLayer>
 
-</draw:SkiaLayout>

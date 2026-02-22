@@ -1,5 +1,7 @@
-﻿using DrawnUi.Camera;
+﻿using System.Diagnostics;
+using DrawnUi.Camera;
 using MusicNotes.UI;
+using SkiaSharp.Views.Maui;
 
 namespace MusicNotes.Audio
 {
@@ -7,8 +9,124 @@ namespace MusicNotes.Audio
     /// Musical Note Detector (Tuner)
     /// Uses AMDF (Average Magnitude Difference Function) with Parabolic Interpolation for accurate pitch.
     /// </summary>
-    public class AudioInstrumentTuner : IAudioVisualizer, IDisposable
+    public class AudioInstrumentTuner : SkiaLayer, IAudioVisualizer, IDisposable
     {
+        private SkiaLabel _labelNote;
+        private SkiaLabel _labelFrequency;
+        private SkiaLabel _labelCents;
+
+        public AudioInstrumentTuner()
+        {
+            UseCache = SkiaCacheType.Operations;
+
+            Children = new List<SkiaControl>
+            {
+                new SkiaLabel("Hi")
+                {
+                    FontSize = 140,
+                    Margin = 16,
+                    UseCache = SkiaCacheType.Operations,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Start,
+                    FontFamily = AppFonts.Default,
+                    TextColor = Colors.Gray,
+                    Text = placeholder
+                }.Assign(out _labelNote),
+
+                new SkiaLabel("0.0 Hz")
+                {
+                    UseCache = SkiaCacheType.Operations,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center,
+                    FontFamily = AppFonts.Default,
+                    FontSize = 22,
+                    TextColor = Colors.Gray,
+                }.Assign(out _labelFrequency),
+
+                new SkiaLabel("0 cents")
+                {
+                    Margin = 24,
+                    UseCache = SkiaCacheType.Operations,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.End,
+                    FontFamily = AppFonts.Default,
+                    FontSize = 16,
+                    TextColor = Colors.Gray,
+                }.Assign(out _labelCents),
+
+            };
+
+
+        }
+
+        protected override void Paint(DrawingContext ctx)
+        {
+            base.Paint(ctx);
+
+            var canvas = ctx.Context.Canvas;
+            float scale = ctx.Scale;
+            float width = (float)DrawingRect.Width;
+            float height = (float)DrawingRect.Height;
+            float left = (float)DrawingRect.Left;
+            float top = (float)DrawingRect.Top;
+
+            if (width <= 0 || height <= 0) return;
+
+            if (_paintNeedle == null)
+            {
+                _paintGauge = new SKPaint { Color = SKColors.DarkGray, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * scale };
+                _paintNeedle = new SKPaint { Color = SKColors.Cyan, IsAntialias = true, Style = SKPaintStyle.Fill };
+            }
+
+            float cx = left + width / 2f;
+
+            float minDim = Math.Min(width, height);
+            float cyStaff = top + height * 0.72f;
+            float cyGauge = top + height * 0.88f;
+            float textLarge = Math.Max(12f * scale, minDim * 0.44f);
+            float textSmall = Math.Max(10f * scale, minDim * 0.16f);
+            float textInfo = Math.Max(8f * scale, minDim * 0.10f);
+
+ 
+            // Always Draw Staff
+            float staffWidth = width * 0.75f;
+            float lineSpacing = Math.Max(2f * scale, height * 0.035f);
+            // Show notes if we have a detected note (even if signal isn't perfect)
+            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, _displayStaffReferenceMidi);
+
+
+
+            // Gauge Background
+            /*
+
+            _paintGauge.StrokeWidth = 6 * scale;
+    float barWidth = width * 0.75f;
+    float barY = cyGauge;
+    canvas.DrawLine(cx - barWidth / 2, barY, cx + barWidth / 2, barY, _paintGauge);
+
+    float tick = Math.Max(2f * scale, height * 0.03f);
+    canvas.DrawLine(cx, barY - tick, cx, barY + tick, _paintGauge); // Center tick
+
+    // Gauge Needle
+
+    float offset = (_displayCents / 50.0f) * (barWidth / 2);
+    offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
+    _paintNeedle.Color = _displayColor.ToSKColor();
+    float dotRadius = Math.Max(2f * scale, height * 0.03f);
+    canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
+    */
+
+
+        }
+
+        public override void OnWillDisposeWithChildren()
+        {
+            base.OnWillDisposeWithChildren();
+
+            _paintGauge?.Dispose(); _paintGauge = null;
+            _paintNeedle?.Dispose(); _paintNeedle = null;
+        }
+
 
         // Pre-allocated max size — 8192 supports up to 96kHz with a ~85ms buffer.
         // The ACTUAL active portion is _effectiveBufferSamples, computed from the real sample rate.
@@ -25,7 +143,7 @@ namespace MusicNotes.Audio
         private int _effectiveBufferSamples = 2205; // sampleRate × 50ms  (default 44.1kHz)
         private int _scanIntervalSamples = 265;  // sampleRate ×  6ms  (default 44.1kHz)
 
-        static string placeholder = "  ";
+        static string placeholder = "Hi";
 
         // Detection State
         private string _currentNote = placeholder;
@@ -33,7 +151,20 @@ namespace MusicNotes.Audio
         private int _currentMidiNote = 0;
         private float _currentFrequency = 0;
         private float _currentCents = 0;
-        private bool _hasSignal = false;
+
+        bool _hasSignal;
+        public bool HasSignal
+        {
+        	get => _hasSignal;
+        	set
+        	{
+        		if (_hasSignal != value)
+        		{
+               		_hasSignal = value;
+                    Update();
+                }
+        	}
+        }
 
         // Note Vote Buffer — rolling majority vote over a TIME-BASED window.
         // Target window = VoteWindowMs of real audio regardless of scan rate.
@@ -62,17 +193,15 @@ namespace MusicNotes.Audio
         private int _displayMidiNote = 0;
         private float _displayFrequency = 0;
         private float _displayCents = 0;
-        private SKColor _displayColor = SKColors.Gray;
+        private Color _displayColor = Colors.Gray;
         private int _displayStaffReferenceMidi = 71;
         private bool _displayHasSignal = false;
         private int _swapRequested = 0;
 
-        private SKPaint _paintTextLarge;
-        private SKPaint _paintTextSmall;
         private SKPaint _paintGauge;
         private SKPaint _paintNeedle;
 
-        public int Notation { get; set; } = 3;
+        public int Notation { get; set; } = 2;
 
         /// <summary>
         /// Letter notation
@@ -172,7 +301,7 @@ namespace MusicNotes.Audio
             _currentMidiNote = 0;
             _currentFrequency = 0;
             _currentCents = 0;
-            _hasSignal = false;
+            HasSignal = false;
 
             Array.Clear(_noteVoteBuffer, 0, _noteVoteBuffer.Length);
             _voteBufferHead = 0;
@@ -187,10 +316,12 @@ namespace MusicNotes.Audio
             _displayMidiNote = 0;
             _displayFrequency = 0;
             _displayCents = 0;
-            _displayColor = SKColors.Gray;
+            _displayColor = Colors.Gray;
             _displayStaffReferenceMidi = 71;
             _displayHasSignal = false;
             _swapRequested = 0;
+
+            Update();
         }
 
         public void AddSample(AudioSample sample)
@@ -232,10 +363,63 @@ namespace MusicNotes.Audio
                 // Update EMA of actual scan interval (reflects real audio chunk size per platform)
                 _avgScanIntervalSamples = _avgScanIntervalSamples * 0.75f + _samplesAddedSinceLastScan * 0.25f;
                 RecalcVoteParams();
-                DetectPitch();
+                DetectPitch(); //MIGHT call UPDATE() here if singal changed
                 _samplesAddedSinceLastScan = 0;
+
+                _displayNote = _currentNote;
+                _displayNoteSolf = _currentNoteSolf;
+                _displayMidiNote = _currentMidiNote;
+                _displayFrequency = _currentFrequency;
+                _displayStaffReferenceMidi = _staffReferenceMidi;
+                _displayHasSignal = HasSignal;
+
+                // Smooth cents for display
+                if (_displayHasSignal)
+                    _smoothCents = _smoothCents * 0.5f + _currentCents * 0.5f;
+                else
+                    _smoothCents = _smoothCents * 0.9f;
+
+                _displayCents = _smoothCents;
+
+                // Color logic
+                if (_displayHasSignal)
+                {
+                    if (Math.Abs(_displayCents) < 10) _displayColor = Colors.Lime;
+                    else if (Math.Abs(_displayCents) < 25) _displayColor = Colors.Yellow;
+                    else _displayColor = Colors.Orange;
+                }
+                else
+                {
+                    _displayColor = Colors.DarkGray;
+                    // Keep showing last note in gray - don't clear
+                    //_displayNote = placeholder;
+                    //_displayNoteSolf = placeholder;
+                }
+
+                // Draw Note Name
+                _labelNote.TextColor = _displayColor;
+                _labelNote.Text = _displayNoteSolf;
+
+                // Draw Info
+                if (_displayHasSignal)
+                {
+                    _labelFrequency.TextColor = Colors.Gray.WithAlpha(95);
+                    //_paintGauge.Color = SKColors.Gray.WithAlpha(95);
+                }
+                else
+                {
+                    _labelFrequency.TextColor = Colors.Gray.WithAlpha(50);
+                    //_paintGauge.Color = SKColors.Gray.WithAlpha(50);
+                }
+
+                _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
+
+                // Cents Text
+                _labelCents.Text = $"{_displayCents:+0;-0} cents";
+
                 System.Threading.Interlocked.Exchange(ref _swapRequested, 1);
             }
+
         }
 
         private void DetectPitch()
@@ -263,7 +447,7 @@ namespace MusicNotes.Audio
 
             if (rms < silenceThreshold) // Silence Threshold
             {
-                _hasSignal = false;
+                HasSignal = false;
                 // Keep last note visible (in gray) - don't clear
                 //_currentNote = placeholder;
                 //_currentNoteSolf = placeholder;
@@ -274,7 +458,7 @@ namespace MusicNotes.Audio
                 _silenceFrameCount++; // Track silence for staff re-centering
                 return;
             }
-            _hasSignal = true;
+            HasSignal = true;
             _silenceFrameCount = 0; // Reset when we have signal
 
             // 2. AMDF Pitch Detection
@@ -495,6 +679,13 @@ namespace MusicNotes.Audio
             }
         }
 
+        /// <summary>
+        /// Here we will nor render anything anymore, 
+        /// </summary>
+        /// <param name="canvas"></param>
+        /// <param name="viewport"></param>
+        /// <param name="scale"></param>
+        /// <returns></returns>
         public bool Render(SKCanvas canvas, SKRect viewport, float scale)
         {
             if (viewport.Width <= 0 || viewport.Height <= 0)
@@ -505,92 +696,22 @@ namespace MusicNotes.Audio
             float left = viewport.Left;
             float top = viewport.Top;
 
-            if (_paintTextLarge == null)
-            {
-                _paintTextLarge = new SKPaint { Color = SKColors.White, IsAntialias = true, TextAlign = SKTextAlign.Center, FakeBoldText = true };
-                _paintTextSmall = new SKPaint { Color = SKColors.Gray, IsAntialias = true, TextAlign = SKTextAlign.Center };
-                _paintGauge = new SKPaint { Color = SKColors.DarkGray, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * scale };
-                _paintNeedle = new SKPaint { Color = SKColors.Cyan, IsAntialias = true, Style = SKPaintStyle.Fill };
-            }
+            //if (_paintNeedle == null)
+            //{
+            //    _paintGauge = new SKPaint { Color = SKColors.DarkGray, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * scale };
+            //    _paintNeedle = new SKPaint { Color = SKColors.Cyan, IsAntialias = true, Style = SKPaintStyle.Fill };
+            //}
 
-            if (System.Threading.Interlocked.CompareExchange(ref _swapRequested, 0, 1) == 1)
-            {
-                _displayNote = _currentNote;
-                _displayNoteSolf = _currentNoteSolf;
-                _displayMidiNote = _currentMidiNote;
-                _displayFrequency = _currentFrequency;
-                _displayStaffReferenceMidi = _staffReferenceMidi;
-                _displayHasSignal = _hasSignal;
-
-                // Smooth cents for display
-                if (_displayHasSignal)
-                    _smoothCents = _smoothCents * 0.5f + _currentCents * 0.5f;
-                else
-                    _smoothCents = _smoothCents * 0.9f;
-
-                _displayCents = _smoothCents;
-
-                // Color logic
-                if (_displayHasSignal)
-                {
-                    if (Math.Abs(_displayCents) < 10) _displayColor = SKColors.Lime;
-                    else if (Math.Abs(_displayCents) < 25) _displayColor = SKColors.Yellow;
-                    else _displayColor = SKColors.Orange;
-                }
-                else
-                {
-                    _displayColor = SKColors.DarkGray;
-                    // Keep showing last note in gray - don't clear
-                    //_displayNote = placeholder;
-                    //_displayNoteSolf = placeholder;
-                }
-            }
+            //if (System.Threading.Interlocked.CompareExchange(ref _swapRequested, 0, 1) == 1)
+            //{
+               
+            //}
 
             float cx = left + width / 2f;
 
-            float minDim = Math.Min(width, height);
-            float cyNote = top + height * 0.35f;
-            float cyInfo = top + height * 0.52f;
             float cyStaff = top + height * 0.72f;
             float cyGauge = top + height * 0.88f;
 
-            float textLarge = Math.Max(12f * scale, minDim * 0.44f);
-            float textSmall = Math.Max(10f * scale, minDim * 0.16f);
-            float textInfo = Math.Max(8f * scale, minDim * 0.10f);
-
-            //font
-            if (_paintTextSmall.Typeface == null || _paintTextSmall.Typeface == SKTypeface.Default)
-            {
-                var replaceFont = SkiaFontManager.Instance.GetFont(AppFonts.Default);
-                if (replaceFont != null)
-                {
-                    _paintTextSmall.Typeface = replaceFont;
-                }
-            }
-
-            if (_paintTextLarge.Typeface == null || _paintTextLarge.Typeface == SKTypeface.Default)
-            {
-                var replaceFont = SkiaFontManager.Instance.GetFont(AppFonts.Default);
-                if (replaceFont != null)
-                {
-                    _paintTextLarge.Typeface = replaceFont;
-
-                }
-            }
-
-            // Draw Note Name
-            _paintTextLarge.TextSize = textLarge;
-            _paintTextLarge.Color = _displayColor;
-
-            var useText = _displayNoteSolf;//_displayNote
-            var bounds = new SKRect();
-            _paintTextLarge.MeasureText(useText, ref bounds);
-            canvas.DrawText(useText, cx, cyNote, _paintTextLarge);
-
-            // Draw Solfège (Do-Re-Mi) just below the large note
-            //_paintTextSmall.TextSize = textSmall;
-            //_paintTextSmall.Color = _displayColor;
-            //canvas.DrawText(_displayNoteSolf, cx, cyNote + textSmall * 0.6f, _paintTextSmall);
 
             // Always Draw Staff
             float staffWidth = width * 0.75f;
@@ -601,40 +722,36 @@ namespace MusicNotes.Audio
             // Draw Info
             if (_displayHasSignal)
             {
-                _paintTextSmall.Color = SKColors.White.WithAlpha(95);
-                _paintGauge.Color = SKColors.Gray.WithAlpha(95);
+                _labelFrequency.TextColor  = Colors.White.WithAlpha(95);
+                //_paintGauge.Color = SKColors.Gray.WithAlpha(95);
             }
             else
             {
-                _paintTextSmall.Color = SKColors.White.WithAlpha(50);
-                _paintGauge.Color = SKColors.Gray.WithAlpha(50);
+                _labelFrequency.TextColor = Colors.White.WithAlpha(50);
+                //_paintGauge.Color = SKColors.Gray.WithAlpha(50);
             }
 
-            _paintGauge.StrokeWidth = 6 * scale;
-            _paintTextSmall.TextSize = textInfo;
+            //_paintGauge.StrokeWidth = 6 * scale;
 
-            canvas.DrawText($"{_displayFrequency:F1} Hz", cx, cyInfo, _paintTextSmall);
+            _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
 
             // Gauge Background
-            float barWidth = width * 0.75f;
-            float barY = cyGauge;
+            //float barWidth = width * 0.75f;
+            //float barY = cyGauge;
 
-            canvas.DrawLine(cx - barWidth / 2, barY, cx + barWidth / 2, barY, _paintGauge);
-            float tick = Math.Max(2f * scale, height * 0.03f);
-            canvas.DrawLine(cx, barY - tick, cx, barY + tick, _paintGauge); // Center tick
+            //canvas.DrawLine(cx - barWidth / 2, barY, cx + barWidth / 2, barY, _paintGauge);
+            //float tick = Math.Max(2f * scale, height * 0.03f);
+            //canvas.DrawLine(cx, barY - tick, cx, barY + tick, _paintGauge); // Center tick
 
             // Gauge Needle
-            float offset = (_displayCents / 50.0f) * (barWidth / 2);
-            offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
-
-            _paintNeedle.Color = _displayColor;
-            float dotRadius = Math.Max(2f * scale, height * 0.03f);
-            canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
+            //float offset = (_displayCents / 50.0f) * (barWidth / 2);
+            //offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
+            //_paintNeedle.Color = _displayColor.ToSKColor();
+            //float dotRadius = Math.Max(2f * scale, height * 0.03f);
+            //canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
 
             // Cents Text
-            _paintTextSmall.TextSize = Math.Max(8f * scale, minDim * 0.08f);
-            canvas.DrawText($"{_displayCents:+0;-0} cents", cx, barY + _paintTextSmall.TextSize * 1.6f, _paintTextSmall);
-
+            _labelCents.Text = $"{_displayCents:+0;-0} cents";
 
             return false;
         }
@@ -692,11 +809,11 @@ namespace MusicNotes.Audio
             }
 
             // Note Head
-            _paintNeedle.Color = _displayColor;
+            _paintNeedle.Color = _displayColor.ToSKColor();
             canvas.DrawOval(cx, noteY, 15 * scale, 11 * scale, _paintNeedle);
 
             // Stem
-            _paintGauge.Color = _displayColor;
+            _paintGauge.Color = _displayColor.ToSKColor();
             _paintGauge.StrokeWidth = 3 * scale;
             float stemHeight = 50 * scale;
             if (stepsFromCenter >= 0) // Stem Down (Left)
@@ -705,26 +822,21 @@ namespace MusicNotes.Audio
                 canvas.DrawLine(cx + 13 * scale, noteY, cx + 13 * scale, noteY - stemHeight, _paintGauge);
 
             // Sharp symbol
+            /*
             bool isSharp = noteInOctave == 1 || noteInOctave == 3 || noteInOctave == 6 || noteInOctave == 8 || noteInOctave == 10;
             if (isSharp)
             {
-                _paintTextSmall.TextSize = 30 * scale;
                 _paintTextSmall.Color = _displayColor;
                 _paintTextSmall.TextAlign = SKTextAlign.Right;
                 _paintTextSmall.FakeBoldText = true;
+
                 canvas.DrawText("#", cx - 22 * scale, noteY + 10 * scale, _paintTextSmall);
                 _paintTextSmall.FakeBoldText = false;
                 _paintTextSmall.TextAlign = SKTextAlign.Center;
                 _paintTextSmall.Color = SKColors.White.WithAlpha(180); // Restore
             }
+            */
         }
 
-        public void Dispose()
-        {
-            _paintTextLarge?.Dispose(); _paintTextLarge = null;
-            _paintTextSmall?.Dispose(); _paintTextSmall = null;
-            _paintGauge?.Dispose(); _paintGauge = null;
-            _paintNeedle?.Dispose(); _paintNeedle = null;
-        }
     }
 }

@@ -6,7 +6,6 @@ uniform float4 iMouse;
 uniform float  iTime;
 uniform float2 iResolution;
 uniform float2 iImageResolution;
-uniform shader iImage1;
 uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
@@ -19,7 +18,6 @@ float hash2d(float2 p) {
 
 half4 main(float2 fragCoord) {
     float2 inputCoord = fragCoord - iOffset;
-    half4 bg = iImage1.eval(inputCoord);
 
     float2 uv = inputCoord / iImageResolution;
     float aspect = iImageResolution.x / iImageResolution.y;
@@ -103,8 +101,7 @@ half4 main(float2 fragCoord) {
     // Sparkles: cool white
     half3 sparkColor = white * sparkle * 1.4;
 
-    // Final additive blend onto background
-    half3 celebration = (rayColor + glowColor + sparkColor) * envelope;
-    half3 result = bg.rgb + celebration * 0.92;
-    return half4(result, bg.a);
+    // Additive overlay — blended with SKBlendMode.Plus by the renderer
+    half3 celebration = (rayColor + glowColor + sparkColor) * envelope * 0.92;
+    return half4(clamp(celebration, 0.0, 1.0), 0.0);
 }

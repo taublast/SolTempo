@@ -6,7 +6,6 @@ uniform float4 iMouse;
 uniform float  iTime;
 uniform float2 iResolution;
 uniform float2 iImageResolution;
-uniform shader iImage1;
 uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
@@ -28,7 +27,6 @@ half3 fwColor(float i) {
 
 half4 main(float2 fragCoord) {
     float2 inputCoord = fragCoord - iOffset;
-    half4 bg = iImage1.eval(inputCoord);
 
     float2 uv = inputCoord / iImageResolution;
     float aspect = iImageResolution.x / iImageResolution.y;
@@ -88,6 +86,6 @@ half4 main(float2 fragCoord) {
         }
     }
 
-    half3 result = bg.rgb + clamp(sparks, 0.0, 2.5) * envelope;
-    return half4(clamp(result, 0.0, 1.0), bg.a);
+    // Additive overlay — blended with SKBlendMode.Plus by the renderer
+    return half4(clamp(sparks * envelope, 0.0, 1.0), 0.0);
 }

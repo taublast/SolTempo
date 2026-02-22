@@ -92,7 +92,11 @@ public partial class AudioPage : BasePageReloadable, IDisposable
             _musicNotes.AddSample(sample);
         }
 
-        _equalizer.AddSample(sample);
+        if (_equalizer.IsVisible)
+        {
+            _equalizer.AddSample(sample);
+        }
+
           //_rhythmDetector?.AddSample(sample);
           //_metronome?.AddSample(sample);
 

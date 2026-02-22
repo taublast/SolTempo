@@ -1,0 +1,42 @@
+// Transition: Circle Open
+// The image stays visible while the surrounding area collapses inward (0→0.5),
+// then the circle expands outward to reveal the new content (0.5→1).
+// This is the inverse of iris: the visible region starts as the full screen
+// and collapses toward iCenter rather than expanding from it.
+//
+// Ported from gl-transitions "circleopen" by gre (MIT License).
+// Adapted for single-texture hide→reveal pattern.
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float SQRT_2    = 1.414213562373;
+const float smoothness = 0.3;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    half4  bg         = iImage1.eval(inputCoord);
+    float2 uv         = inputCoord / iImageResolution;
+
+    // phase: 0→1→0  (1 = fully hidden at progress 0.5)
+    float phase = 1.0 - abs(progress * 2.0 - 1.0);
+
+    // x drives circle size: 1 at start/end (full screen), 0 at midpoint (gone)
+    float x = 1.0 - phase;
+
+    // Aspect-corrected distance from iCenter
+    float dist = SQRT_2 * distance(iCenter, uv);
+
+    // m = 0 inside circle (image visible), 1 outside (black)
+    // At x=1: threshold = 1*(1+smoothness) > max possible dist (~1.0) → m=0 everywhere → full image
+    // At x=0: threshold = 0, dist >= 0 always → m=1 everywhere → full black
+    float m = smoothstep(-smoothness, 0.0, dist - x * (1.0 + smoothness));
+
+    return mix(bg, half4(0.0, 0.0, 0.0, bg.a), m);
+}

@@ -590,9 +590,9 @@ namespace MusicNotes.Audio
                     canvas.DrawText($"Confidence: {_displayConfidence:F0}%", centerX, centerY + 95 * scale, _paintTextSmall);
                     
                     // Debug: show history count
-                    _paintTextSmall.TextSize = 16 * scale;
-                    _paintTextSmall.Color = SKColors.Gray;
-                    canvas.DrawText($"History: {_energyHistory.Count} | BPMs tracked: {_bpmHistory.Count}", centerX, centerY + 115 * scale, _paintTextSmall);
+                    //_paintTextSmall.TextSize = 16 * scale;
+                    //_paintTextSmall.Color = SKColors.Gray;
+                    //canvas.DrawText($"History: {_energyHistory.Count} | BPMs tracked: {_bpmHistory.Count}", centerX, centerY + 115 * scale, _paintTextSmall);
                     
                     _paintTextSmall.Color = SKColors.LightGray;
                     _paintTextSmall.TextSize = 32 * scale;

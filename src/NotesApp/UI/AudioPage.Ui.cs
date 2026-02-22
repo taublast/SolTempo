@@ -31,21 +31,25 @@ namespace MusicNotes.UI
 
         private bool _isLayoutLandscape;
         private SkiaShape _captureButtonOuter;
-        private AudioVisualizer _musicNotes;
+        private AudioInstrumentTuner _musicNotes;
         private SkiaControl _musicNotesWrapper;
         private AudioVisualizer _musicBPMDetector;
         private SkiaControl _musicBPMDetectorWrapper;
         private AudioVisualizer _equalizer;
         private AudioPageSettings _settingsPopup;
+        private SkiaLayout _mainStack;
 
         private void CreateContent()
         {
             bool isSimulator = false;
-            SkiaLayout mainStack = null;
+            //SkiaLayout mainStack = null;
 
-            if (mainStack == null)
+            //change here for convinient HotReload
+            float buttonIconFontSize = 26;
+
+            //if (mainStack == null)
             {
-                mainStack = new SkiaLayout
+                _mainStack = new SkiaLayout
                 {
                     BackgroundColor = Colors.Black,
                     HorizontalOptions = LayoutOptions.Fill,
@@ -63,7 +67,7 @@ namespace MusicNotes.UI
 
                         new SkiaImage()
                         {
-                            UseCache = SkiaCacheType.Image,
+                            UseCache = SkiaCacheType.GPU,
                             // https://unsplash.com/photos/music-room-with-lights-turned-on-gUK3lA3K7Yo
                             // by https://unsplash.com/@john_matychuk
                             Source = @"Images\musicback.jpg",
@@ -89,7 +93,7 @@ namespace MusicNotes.UI
                             {
                                 new SkiaBackdrop()
                                 {
-                                    //UseCache = SkiaCacheType.Operations,
+                                    //UseCache = SkiaCacheType.Operations, //notice cache here
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
                                     Blur = 0,
@@ -97,7 +101,11 @@ namespace MusicNotes.UI
                                     {
                                         new GlassBackdropEffect()
                                         {
+#if WINDOWS || MACCATALYST
+                                            ShaderSource = @"Shaders\glass_hq.sksl",
+#else
                                             ShaderSource = @"Shaders\glass.sksl",
+#endif  
                                             BlurStrength = 1.0f,
                                             GlassOpacity = 0.9f,
                                             GlassColor = Colors.Black.WithAlpha(0.33f),
@@ -107,7 +115,7 @@ namespace MusicNotes.UI
                                     }
                                 },
 
-                                new AudioVisualizer(new AudioInstrumentTuner())
+                                new AudioInstrumentTuner()
                                 {
                                     Margin = new (16,16,16,0),
                                     HorizontalOptions = LayoutOptions.Fill,
@@ -139,6 +147,7 @@ namespace MusicNotes.UI
                         // BPM MUSIC
                         new SkiaShape()
                         {
+                            IsVisible=false,
                             Margin = new (16,16,16,0),
                             HorizontalOptions = LayoutOptions.Fill,
                             HeightRequest = 350,
@@ -155,7 +164,11 @@ namespace MusicNotes.UI
                                     {
                                         new GlassBackdropEffect()
                                         {
+#if WINDOWS || MACCATALYST
+                                            ShaderSource = @"Shaders\glass_hq.sksl",
+#else
                                             ShaderSource = @"Shaders\glass.sksl",
+#endif  
                                             BlurStrength = 1.0f,
                                             GlassOpacity = 0.9f,
                                             GlassColor = Colors.Black.WithAlpha(0.33f),
@@ -188,6 +201,7 @@ namespace MusicNotes.UI
                         // Bottom Menu Bar
                         new SkiaShape()
                         {
+
                             Type = ShapeType.Rectangle,
                             CornerRadius = 32,
                             //BackgroundColor = Color.FromArgb("#DD000000"),
@@ -205,12 +219,16 @@ namespace MusicNotes.UI
                                     {
                                         new GlassBackdropEffect()
                                         {
+#if WINDOWS || MACCATALYST
+                                            ShaderSource = @"Shaders\glass_hq.sksl",
+#else
                                             ShaderSource = @"Shaders\glass.sksl",
+#endif  
                                             BlurStrength = 1.0f,
                                             GlassOpacity = 0.9f,
                                             GlassColor = Colors.White.WithAlpha(0.05f),
                                             CornerRadius = 32,  // Match parent SkiaShape
-                                            GlassDepth = 1.4f   // 3D emboss intensity (0.0-2.0+)
+                                            GlassDepth = 0.75f   // 3D emboss intensity (0.0-2.0+)
                                         }
                                     }
                                 },
@@ -218,7 +236,7 @@ namespace MusicNotes.UI
                                 new SkiaRow()
                                 {
                                     UseCache = SkiaCacheType.Operations,
-                                    Margin = new Thickness(20, 16),
+                                    Margin = new Thickness(20, 12),
                                     Spacing = 16,
                                     HorizontalOptions = LayoutOptions.Center,
                                     VerticalOptions = LayoutOptions.Center,
@@ -239,7 +257,7 @@ namespace MusicNotes.UI
                                                     Text = IconFont.Music,
                                                     TextColor = Colors.WhiteSmoke,
                                                     FontFamily = "FontIcons",
-                                                    FontSize = 24,
+                                                    FontSize = buttonIconFontSize,
                                                     HorizontalOptions = LayoutOptions.Center,
                                                     VerticalOptions = LayoutOptions.Center,
                                                 }
@@ -268,24 +286,33 @@ namespace MusicNotes.UI
 
                                            var fx = new TransitionEffect
                                            { 
+                                               //ShaderSource = @"Shaders\transition_circleopen.sksl", //ellipse cat's eye
+                                               //ShaderSource = @"Shaders\transition_circlecrop.sksl",
                                                //ShaderSource = @"Shaders\transition_iris.sksl",
+
                                                ShaderSource = @"Shaders\transition_ripple.sksl",
                                                //ShaderSource = @"Shaders\transition_swirl.sksl",
                                                //ShaderSource = @"Shaders\transition_zoom.sksl",
+                                               
+                                               //ShaderSource = @"Shaders\transition_pixelize.sksl", //ERROR
+                                               
+                                               //ShaderSource = @"Shaders\transition_fadecolor.sksl",
+                                               //ShaderSource = @"Shaders\transition_colorphase.sksl",
                                                DurationMs = 600
                                            };
                                            fx.Midpoint  += (s, e) =>
                                            {
                                                ToggleVisualizerMode();
+                                               fx.AquiredBackground = false;
                                            };
                                            fx.Completed += (s, e) =>
                                            {
-                                               mainStack.VisualEffects.Remove(fx);
-                                               //mainStack.DisposeObject(fx);
+                                               _mainStack.VisualEffects.Remove(fx);
+                                               _mainStack.DisposeObject(fx);
                                            };
 
-                                            mainStack.VisualEffects.Add(fx);
-                                           fx.Play(_backgroundImage);
+                                            _mainStack.VisualEffects.Add(fx);
+                                           fx.Play();
 
                                         }),
 
@@ -305,7 +332,7 @@ namespace MusicNotes.UI
                                                     Text = IconFont.Cog,
                                                     TextColor = Colors.WhiteSmoke,
                                                     FontFamily = "FontIcons",
-                                                    FontSize = 24,
+                                                    FontSize = buttonIconFontSize,
                                                     HorizontalOptions = LayoutOptions.Center,
                                                     VerticalOptions = LayoutOptions.Center,
                                                 },
@@ -354,7 +381,7 @@ namespace MusicNotes.UI
                                                     //Text = IconFont.CloudQuestion,
                                                     TextColor = Colors.WhiteSmoke,
                                                     FontFamily = "FontIcons",
-                                                    FontSize = 24,
+                                                    FontSize = buttonIconFontSize,
                                                     HorizontalOptions = LayoutOptions.Center,
                                                     VerticalOptions = LayoutOptions.Center,
                                                 },
@@ -395,7 +422,7 @@ namespace MusicNotes.UI
                                             {
                                                 new SkiaRichLabel("👤")
                                                 {
-                                                    FontSize = 24,
+                                                    FontSize = buttonIconFontSize,
                                                     HorizontalOptions = LayoutOptions.Center,
                                                     VerticalOptions = LayoutOptions.Center,
                                                 }
@@ -427,7 +454,7 @@ namespace MusicNotes.UI
 
                         new AudioPageSettings(this)
                         {
-                            IsVisible=false
+                            IsVisible=false,
                         }.Assign(out _settingsPopup)
                     }
                 };
@@ -439,12 +466,13 @@ namespace MusicNotes.UI
                 VerticalOptions = LayoutOptions.Fill,
                 Children =
             {
-                mainStack,
+                _mainStack,
                 _previewOverlay,
 #if DEBUG
                 new SkiaLabelFps()
                 {
                     Margin = new(0, 0, 4, 24),
+                    ForceRefresh = true,
                     VerticalOptions = LayoutOptions.End,
                     HorizontalOptions = LayoutOptions.End,
                     Rotation = -45,
@@ -459,7 +487,7 @@ namespace MusicNotes.UI
             Canvas = new Canvas
             {
                 RenderingMode = RenderingModeType.Accelerated,
-                Gestures = GesturesMode.Enabled,
+                Gestures = GesturesMode.Lock,
                 Content = rootLayer,
             };
 
@@ -470,7 +498,6 @@ namespace MusicNotes.UI
                     Tasks.StartDelayed(TimeSpan.FromMilliseconds(500), () =>
                     {
                         Recorder.IsOn = true;
-                        // Speech recognition will auto-start/stop based on recording state
                     });
                 }
             };
@@ -514,10 +541,12 @@ namespace MusicNotes.UI
 
             var fx = new CelebrationEffect
             {
-                ShaderSource = @"Shaders\celebrate_starburst.sksl",
+                UseContext = false,
+                //ShaderSource = @"Shaders\celebrate_starburst.sksl",
                 //DurationMs = 2500,
-                //ShaderSource = @"Shaders\celebrate_waves.sksl",
-                //DurationMs = 3000,
+                ShaderSource = @"Shaders\celebrate_waves.sksl",
+                Center = new SKPoint(0.5f, 0.33f),
+                DurationMs = 2000,
                 //ShaderSource = @"Shaders\celebrate_confetti.sksl",
                 //DurationMs = 3500,
                 //ShaderSource = @"Shaders\celebrate_confetti_burst.sksl",
@@ -527,7 +556,7 @@ namespace MusicNotes.UI
                 //ShaderSource = @"Shaders\celebrate_fireworks_launch.sksl",
                 //DurationMs = 4000,
                 //ShaderSource = @"Shaders\celebrate_fireworks_bloom.sksl",
-                DurationMs = 5000,
+                //DurationMs = 4000,
                 //ShaderSource = @"Shaders\celebrate_fireworks_glitter.sksl",
                 //DurationMs = 3500,
                 //ShaderSource = @"Shaders\celebrate_aurora.sksl",
@@ -539,13 +568,14 @@ namespace MusicNotes.UI
 
             fx.Completed += (s, e) =>
             {
-                _backgroundImage.VisualEffects.Remove(fx);
+                _mainStack.VisualEffects.Remove(fx);
+                _mainStack.DisposeObject(fx);
                 System.Diagnostics.Debug.WriteLine($"Stopped effect {fx.ShaderSource}");
             };
 
-            _backgroundImage.VisualEffects.Add(fx);
+            _mainStack.VisualEffects.Add(fx);
             System.Diagnostics.Debug.WriteLine($"Started effect {fx.ShaderSource}");
-            fx.Play(_backgroundImage);
+            fx.Play();
         }
 
         public void ShowAlert(string title, string message)
