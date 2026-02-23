@@ -28,10 +28,11 @@ Displays the detected pitch as a musical note name with a tuning indicator showi
 
 Switch **Notation** to choose how notes are labelled:
 
-- **Letter notation** — A B C D E F G
-- **Fixed-do** — Do Re Mi Fa Sol La Si
-- **Movable-do** — same syllables, root moves with key
-- **Cyrillic solfeggio** — До Ре Ми Фа Соль Ля Си
+- **Letters** — A B C D..
+- **European** — Sol La Si
+- **American** — Sol La Ti
+- **Cyrillic** — До Ре Ми..
+- **Numbers** — 1 2 3..
 
 ### Detection
 
@@ -51,7 +52,7 @@ Best used for BPM detection of a music or a metronome.
 This module analyses the audio signal to detect the tempo of the music being played. 
 It displays the beats per minute (BPM) and a visual representation of the detected tempo.  
 Note that tempo of the music can change over time inside same musical composition.
-
+This module gives best results with audio gain turned off.
 
 ## Audio Settings
 

@@ -4,6 +4,7 @@ using DrawnUi.Views;
 using MusicNotes.Audio;
 using MusicNotes.Effects;
 using MusicNotes.Helpers;
+using MusicNotes.Resources.Strings;
 using ShadersCamera.Views;
 
 namespace MusicNotes.UI;
@@ -27,12 +28,13 @@ public partial class AudioPage
     private SkiaViewSwitcher _settingsTabs;
     private SkiaLabel[] _tabLabels;
     private int _currentMode = 0; // 0=Notes, 2=MusicBPM
+    private TintedShape _modeButton;
     private SkiaLabel _modeButtonIcon;
     private bool _isLayoutLandscape;
     private SkiaShape _captureButtonOuter;
     public AudioInstrumentTuner NotesModule;
     private SkiaControl _musicNotesWrapper;
-    private AudioVisualizer _musicBPMDetector;
+    private AudioMusicBPM _musicBPMDetector;
     private SkiaControl _musicBPMDetectorWrapper;
     private AudioVisualizer _equalizer;
     private SettingsPopup _settingsPopup;
@@ -82,7 +84,6 @@ public partial class AudioPage
     public AudioPage()
     {
         Title = "Pitch & Tempo";
-
     }
 
     private void CreateContent()
@@ -185,7 +186,7 @@ public partial class AudioPage
                             IsVisible=false,
                             Margin = new (16,16,16,0),
                             HorizontalOptions = LayoutOptions.Fill,
-                            HeightRequest = 350,
+                            HeightRequest = 330,
 
                             Children =
                             {
@@ -211,9 +212,9 @@ public partial class AudioPage
                                     }
                                 },
 
-                                new AudioVisualizer(new AudioMusicBPMDetector())
+                                new AudioMusicBPM()
                                 {
-                                    Margin = 1,
+                                    Margin = 6,
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
                                 }.Assign(out _musicBPMDetector),
@@ -274,9 +275,10 @@ public partial class AudioPage
                                     Children =
                                     {
                                         // Mode Button
-                                        new SkiaShape()
+                                        new TintedShape()
                                         {
-                                            Type = ShapeType.Rectangle,
+                                            TintColor = Colors.CornflowerBlue,
+                                            UseCache = SkiaCacheType.Image,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#3B82F6"),
                                             WidthRequest = 48,
@@ -294,24 +296,8 @@ public partial class AudioPage
                                                 }
                                                 .Assign(out _modeButtonIcon)
                                             },
-                                            UseCache = SkiaCacheType.Image,
-                                            FillGradient = new SkiaGradient()
-                                            {
-                                                Type = GradientType.Linear,
-                                                Colors = new List<Color>()
-                                                {
-                                                    Colors.CornflowerBlue.Lighten(0.6f),
-                                                    Colors.CornflowerBlue,
-                                                    Colors.CornflowerBlue.Darken(0.6f)
-                                                },
-                                                ColorPositions = new List<double>()
-                                                {
-                                                    0.0,
-                                                    0.2,
-                                                    1.0,
-                                                }
-                                            }
                                         }
+                                        .Assign(out _modeButton)
                                         .OnTapped(me =>
                                         {
                                             lock (lockNav)
@@ -356,15 +342,15 @@ public partial class AudioPage
                                                 _mainStack.VisualEffects.Add(fx);
                                                 fx.Play();
                                             }
-                                         
+
 
                                         }),
 
                                         // Settings Button
-                                        new SkiaShape()
+                                        new TintedShape()
                                         {
                                             UseCache = SkiaCacheType.Image,
-                                            Type = ShapeType.Rectangle,
+                                            TintColor = Colors.DarkCyan,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#6B7280"),
                                             WidthRequest = 48,
@@ -381,38 +367,17 @@ public partial class AudioPage
                                                     VerticalOptions = LayoutOptions.Center,
                                                 },
                                             },
-                                            FillGradient = new SkiaGradient()
-                                            {
-                                                Type = GradientType.Linear,
-                                                Colors = new List<Color>()
-                                                {
-                                                    Colors.DarkCyan.Lighten(0.6f),
-                                                    Colors.DarkCyan,
-                                                    Colors.DarkCyan.Darken(0.6f)
-                                                },
-                                                ColorPositions = new List<double>()
-                                                {
-                                                    0.0,
-                                                    0.2,
-                                                    1.0,
-                                                }
-                                            }
                                         }
                                         .OnTapped(me =>
                                         {
                                             _settingsPopup?.Show();
-                                            //MainThread.BeginInvokeOnMainThread(() =>
-                                            //{
-                                            //    var popup = new AudioPageSettingsPopup(this);
-                                            //    this.ShowPopup(popup);
-                                            //});
-                                            //ToggleSettingsDrawer();
                                         }),
 
                                         // Help Button
-                                        new SkiaShape()
+                                        new TintedShape()
                                         {
-                                            Type = ShapeType.Rectangle,
+                                            UseCache = SkiaCacheType.Image,
+                                            //TintColor = Colors.Orange,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#6B7280"),
                                             WidthRequest = 48,
@@ -430,67 +395,14 @@ public partial class AudioPage
                                                     VerticalOptions = LayoutOptions.Center,
                                                 },
                                             },
-                                            UseCache = SkiaCacheType.Image,
-                                            FillGradient = new SkiaGradient()
-                                            {
-                                                Type = GradientType.Linear,
-                                                Colors = new List<Color>()
-                                                {
-                                                    Colors.Orange.Lighten(0.6f),
-                                                    Colors.Orange,
-                                                    Colors.Orange.Darken(0.6f)
-                                                },
-                                                ColorPositions = new List<double>()
-                                                {
-                                                    0.0,
-                                                    0.2,
-                                                    1.0,
-                                                }
-                                            }
                                         }
                                         .OnTapped(me =>
                                         {
                                             _helpPopup?.Show();
+                                            //TriggerCelebration();
                                         }),
 
-                                        /*
-                                        // Profile Button
-                                        new SkiaShape()
-                                        {
-                                            Type = ShapeType.Rectangle,
-                                            CornerRadius = 12,
-                                            BackgroundColor = Color.FromArgb("#6B7280"),
-                                            WidthRequest = 48,
-                                            HeightRequest = 48,
-                                            Children =
-                                            {
-                                                new SkiaRichLabel("👤")
-                                                {
-                                                    FontSize = buttonIconFontSize,
-                                                    HorizontalOptions = LayoutOptions.Center,
-                                                    VerticalOptions = LayoutOptions.Center,
-                                                }
-                                            },
-                                            UseCache = SkiaCacheType.Image,
-                                            FillGradient = new SkiaGradient()
-                                            {
-                                                Type = GradientType.Linear,
-                                                Colors = new List<Color>()
-                                                {
-                                                    Colors.DarkGrey,
-                                                    Colors.DarkOliveGreen,
-                                                    Colors.Gray
-                                                },
-                                                ColorPositions = new List<double>()
-                                                {
-                                                    0.0,
-                                                    0.2,
-                                                    1.0,
-                                                }
-                                            }
-                                        }
-                                        .OnTapped(me => {  }),
-                                        */
+                       
                                     }
                                 }
                             },
@@ -593,12 +505,12 @@ public partial class AudioPage
             UseContext = true,
             UseBackground = PostRendererEffectUseBackgroud.Never,
             BlendMode = SKBlendMode.Plus,
-            //ShaderSource = @"Shaders\celebrate_starburst.sksl",
+            ShaderSource = @"Shaders\celebrate_starburst.sksl",
             //DurationMs = 2500,
             //ShaderSource = @"Shaders\celebrate_waves.sksl",
             Center = new SKPoint(0.5f, 0.33f),
             DurationMs = 5000,
-            ShaderSource = @"Shaders\celebrate_confetti.sksl",
+            //ShaderSource = @"Shaders\celebrate_confetti.sksl",
             //DurationMs = 3500,
             //ShaderSource = @"Shaders\celebrate_confetti_burst.sksl",
             //DurationMs = 3500,
@@ -633,85 +545,54 @@ public partial class AudioPage
     {
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            await DisplayAlert(title, message, "OK");
+            await DisplayAlert(title, message, ResStrings.BtnOk);
         });
     }
 
     private void ToggleVisualizerMode(int index = -1)
     {
- 
-            var oldMode = _currentMode;
-            if (index >= 0)
-            {
-                _currentMode = index;
-            }
-            else
-            {
-                // Cycle through modes: 0=Notes, 1=DrummerBPM, 2=Metronome, 3=MusicBPM
-                _currentMode = (_currentMode + 1) % 2;
-            }
+        var oldMode = _currentMode;
+        if (index >= 0)
+        {
+            _currentMode = index;
+        }
+        else
+        {
+            // Cycle through modes 
+            _currentMode = (_currentMode + 1) % 2;
+        }
 
-            if (_background == null)
-            {
-                return;
-            }
+        if (_background == null)
+        {
+            return;
+        }
 
-            // Hide all visualizers
-            if (_musicNotesWrapper != null)
-                _musicNotesWrapper.IsVisible = false;
-            //if (_rhythmDetector != null)
-            //    _rhythmDetector.IsVisible = false;
-            //if (_metronome != null)
-            //    _metronome.IsVisible = false;
-            if (_musicBPMDetectorWrapper != null)
-                _musicBPMDetectorWrapper.IsVisible = false;
+        switch (_currentMode)
+        {
+        case 0: // Notes
+        _musicBPMDetectorWrapper.IsVisible = false;
+        _musicNotesWrapper.IsVisible = true;
+        //_modeButton.TintColor = Colors.CornflowerBlue;
+        _modeButtonIcon.Text = IconFont.PlaylistMusic;//"🎵";
+        _background.ToggleImage(0);
 
-            // Show current mode visualizer
-            switch (_currentMode)
-            {
-                case 0: // Notes
-                    if (_musicNotesWrapper != null)
-                        _musicNotesWrapper.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.PlaylistMusic;//"🎵";
+        break;
+        case 1:
+        _musicNotesWrapper.IsVisible = false;
+        _musicBPMDetectorWrapper.IsVisible = true;
+        //_modeButton.TintColor = Colors.DeepSkyBlue;
+        _modeButtonIcon.Text = IconFont.TimerMusic;//IconFont.Music;//"🎼";
+        _background.ToggleImage(1);
+        break;
+        }
 
-                    _background.ToggleImage(0);
-
-                    break;
-                case 1:
-                    if (_musicBPMDetectorWrapper != null)
-                        _musicBPMDetectorWrapper.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.TimerMusic;//IconFont.Music;//"🎼";
-                    //
-                    //_imageBpm.IsVisible = true;
-                    _background.ToggleImage(1);
+        if (oldMode != _currentMode)
+        {
+            UserSettings.Current.Module = _currentMode;
+            UserSettings.Save();
+        }
 
 
-                    break;
-                case 2: // Metronome
-                    //if (_metronome != null)
-                    //    _metronome.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.AccountMusic;// "⏱️";
-                    break;
-                case 3: // Music BPM
-
-                    // Drummer BPM
-                    //if (_rhythmDetector != null)
-                    //    _rhythmDetector.IsVisible = true;
-                    if (_modeButtonIcon != null)
-                        _modeButtonIcon.Text = IconFont.DotsCircle; // IconFont.TimerMusic;// IconFont.Metronome;// "🥁";
-                    break;
-            }
-
-            if (oldMode != _currentMode)
-            {
-                UserSettings.Current.Module = _currentMode;
-                UserSettings.Save();
-            }
-     
-     
     }
 
 }

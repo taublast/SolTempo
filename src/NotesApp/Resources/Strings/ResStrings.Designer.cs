@@ -70,6 +70,15 @@ namespace MusicNotes.Resources.Strings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Pitch &amp; Tempo.
+        /// </summary>
+        public static string AppTitle {
+            get {
+                return ResourceManager.GetString("AppTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cancel.
         /// </summary>
         public static string BtnCancel {
@@ -102,6 +111,15 @@ namespace MusicNotes.Resources.Strings {
         public static string BtnCreate {
             get {
                 return ResourceManager.GetString("BtnCreate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OK.
+        /// </summary>
+        public static string BtnOk {
+            get {
+                return ResourceManager.GetString("BtnOk", resourceCulture);
             }
         }
         
@@ -142,20 +160,6 @@ namespace MusicNotes.Resources.Strings {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to In the soon-coming __SkiaSharp__ release we could generate tagged PDF containing links and much more!.. 
-        /// To update the device software, follow these steps:
-        /// 1. Download the new version of the software from the website [supadupa.com](https://google.com).
-        /// 2. Copy the firmware file in `HEX` format corresponding to your device model to the root directory of the memory card.
-        /// 3. Insert the memory card into the device when it is turned off.
-        /// 4. While holding the `Mode` button, connect the device to power v [rest of string was truncated]&quot;;.
-        /// </summary>
-        public static string MarkdownTest {
-            get {
-                return ResourceManager.GetString("MarkdownTest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to No.
         /// </summary>
         public static string No {
@@ -179,6 +183,15 @@ namespace MusicNotes.Resources.Strings {
         public static string On {
             get {
                 return ResourceManager.GetString("On", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Settings.
+        /// </summary>
+        public static string Settings {
+            get {
+                return ResourceManager.GetString("Settings", resourceCulture);
             }
         }
         

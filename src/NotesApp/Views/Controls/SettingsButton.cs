@@ -29,6 +29,7 @@ public class SettingsButton : SkiaLayout, ISkiaGestureListener
         Padding = new Thickness(4);
     }
 
+
     public SettingsButton(string text) : this()
     {
         Text = text;

@@ -10,7 +10,7 @@ namespace MusicNotes.Helpers
             Lang = "en";
             Module = 0;
             Device = 0;
-            Gain = true;
+            Gain = false;
             NotesUseSemiNotes = true;
             NotesNotation = 2;
         }

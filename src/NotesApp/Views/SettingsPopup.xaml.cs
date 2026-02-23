@@ -295,4 +295,9 @@ public partial class SettingsPopup : AnimatedPopup
         });
     }
 
+    private void TappedClose(object sender, ControlTappedEventArgs e)
+    {
+        Close();
+    }
+
 }

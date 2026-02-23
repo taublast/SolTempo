@@ -71,17 +71,30 @@ public partial class HelpPopup : AnimatedPopup
 
     private void HelpContent_OnLinkTapped(object sender, string url)
     {
-        _ = Launcher.Default.TryOpenAsync(url);
+        OpenLink(url);
     }
 
     private void TappedDrawnUi(object sender, ControlTappedEventArgs e)
     {
-        _ = Launcher.Default.TryOpenAsync("https://drawnui.net");
+        OpenLink("https://drawnui.net");
     }
 
 
     private void TappedMaui(object sender, ControlTappedEventArgs e)
     {
-         _ = Launcher.Default.TryOpenAsync("https://dotnet.microsoft.com/en-us/apps/maui");
+        OpenLink("https://dotnet.microsoft.com/en-us/apps/maui");
+    }
+
+    private void TappedClose(object sender, ControlTappedEventArgs e)
+    {
+        Close();
+    }
+
+    void OpenLink(string url)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await Launcher.Default.TryOpenAsync(url);
+        });
     }
 }

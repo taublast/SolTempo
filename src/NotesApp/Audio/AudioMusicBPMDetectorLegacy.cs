@@ -7,7 +7,7 @@ namespace MusicNotes.Audio
     /// Music BPM Detector - Detects BPM from music (not just drums)
     /// Uses autocorrelation for tempo detection in musical tracks
     /// </summary>
-    public class AudioMusicBPMDetector : IAudioVisualizer, IDisposable
+    public class AudioMusicBPMDetectorLegacy : IAudioVisualizer, IDisposable
     {
         private const int BufferSize = 8192; // Larger buffer for music analysis
         private float[] _sampleBuffer = new float[BufferSize];
@@ -538,7 +538,7 @@ namespace MusicNotes.Audio
 
             _paintEnergyWave ??= new SKPaint
             {
-                Color = SKColors.Magenta,
+                Color = SKColors.LightGreen,
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = 2 * scale,
                 IsAntialias = true

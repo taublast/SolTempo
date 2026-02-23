@@ -22,12 +22,18 @@ namespace MusicNotes.Audio
 
             Children = new List<SkiaControl>
             {
+
                 new SkiaLabel("Hi")
                 {
                     FontSize = 140,
-                    Margin = 16,
+                    IsParentIndependent = true,
+                    FontAttributes = FontAttributes.Bold,
+                    Margin = new (2,16),
+                    MaxLines = 1,
+                    LineBreakMode = LineBreakMode.CharacterWrap,
                     UseCache = SkiaCacheType.Operations,
-                    HorizontalOptions = LayoutOptions.Center,
+                    HorizontalOptions = LayoutOptions.Fill,
+                    HorizontalTextAlignment = DrawTextAlignment.Center,
                     VerticalOptions = LayoutOptions.Start,
                     FontFamily = AppFonts.Default,
                     TextColor = Colors.Gray,
@@ -253,7 +259,7 @@ namespace MusicNotes.Audio
         /// <summary>
         /// Cyrillic solfeggio
         /// </summary>
-        private static readonly string[] SolfegeCyr = { "До", "До#", "Ре", "Ре#", "Ми", "Фа", "Фа#", "Со", "Со#", "Ля", "Ля#", "Си" };
+        private static readonly string[] SolfegeCyr = { "До", "До#", "Ре", "Ре#", "Ми", "Фа", "Фа#", "Соль", "Со#", "Ля", "Ля#", "Си" };
 
         /// <summary>
         /// Numbers
