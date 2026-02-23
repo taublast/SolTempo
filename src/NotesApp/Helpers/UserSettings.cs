@@ -19,13 +19,34 @@ namespace MusicNotes.Helpers
         public bool Gain { get; set; }
         public Dictionary<string, int> Formats { get; set; }
 
+
+        public int NotesNotation { get; set; }
+        public int NotesMode { get; set; }
+        public bool NotesUseSemiNotes { get; set; }
+
+
         private static UserSettings _loaded;
+
+        public static void FillFromNotes(AudioInstrumentTuner module)
+        {
+            UserSettings.Current.NotesUseSemiNotes = module.UseSemiNotes;
+            UserSettings.Current.NotesNotation = module.Notation;
+            UserSettings.Current.NotesMode = module.VoiceMode ? 0 : 1;
+        }
+
+        public static void ApplyToNotes(AudioInstrumentTuner module)
+        {
+            module.UseSemiNotes = UserSettings.Current.NotesUseSemiNotes;
+            module.Notation = UserSettings.Current.NotesNotation;
+            module.VoiceMode = UserSettings.Current.NotesMode == 0;
+        }
 
         public static void FillFromHardware(AudioRecorder hardware)
         {
             UserSettings.Current.Gain = hardware.UseGain;
             UserSettings.Current.Device = hardware.AudioDeviceIndex;
         }
+
         public static void ApplyToHardware(AudioRecorder hardware)
         {
             hardware.UseGain = UserSettings.Current.Gain;

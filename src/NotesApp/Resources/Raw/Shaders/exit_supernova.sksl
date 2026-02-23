@@ -54,8 +54,8 @@ half4 main(float2 fragCoord) {
     float2 sampleG = center + spunDelta / scale;
     float2 sampleB = center + spunDelta / (scale * max(0.01, 1.0 - split * 0.65));
 
+    if (sampleG.x < 0.0 || sampleG.x > 1.0 || sampleG.y < 0.0 || sampleG.y > 1.0) return half4(0.0);
     sampleR = clamp(sampleR, float2(0.0), float2(1.0));
-    sampleG = clamp(sampleG, float2(0.0), float2(1.0));
     sampleB = clamp(sampleB, float2(0.0), float2(1.0));
 
     half4 col;
@@ -87,9 +87,10 @@ half4 main(float2 fragCoord) {
     float  refract = 0.07 * sphere * invT;
     float2 refractUV = uv + norm * refract;
     refractUV = center + (refractUV - center) / scale;
-    refractUV = clamp(refractUV, float2(-0.05), float2(1.05));
-    half4 refractCol = iImage1.eval(refractUV * iImageResolution);
-    col.rgb = mix(col.rgb, refractCol.rgb, clamp(t * 3.0, 0.0, 1.0));
+    if (refractUV.x >= 0.0 && refractUV.x <= 1.0 && refractUV.y >= 0.0 && refractUV.y <= 1.0) {
+        half4 refractCol = iImage1.eval(refractUV * iImageResolution);
+        col.rgb = mix(col.rgb, refractCol.rgb, clamp(t * 3.0, 0.0, 1.0));
+    }
 
     // ── Rim + highlight ────────────────────────────────────────────────
     float  rim   = 1.0 - abs(dot(norm, normalize(float2(0.8, 1.0))));

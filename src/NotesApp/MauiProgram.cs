@@ -37,7 +37,7 @@ namespace MusicNotes
 
                     fonts.AddFont("Neucha-Regular.ttf", AppFonts.Default);
                     fonts.AddFont("ShantellSans-Bold.ttf", AppFonts.Bold);
-                    fonts.AddFont("NotoSansDisplay-Regular", AppFonts.Title);
+                    fonts.AddFont("NotoSansDisplay-Regular.ttf", AppFonts.Title);
  
                 });
 
@@ -47,7 +47,7 @@ namespace MusicNotes
                 DesktopWindow = new()
                 {
                     Height = 800,
-                    Width = 350,
+                    Width = 375,
                 }
 
                 //landscape

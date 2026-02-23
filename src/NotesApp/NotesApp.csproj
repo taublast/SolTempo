@@ -112,8 +112,11 @@
             <AutoGen>True</AutoGen>
             <DependentUpon>ResStrings.resx</DependentUpon>
         </Compile>
-        <Compile Update="UI\AudioPageSettings.xaml.cs">
-          <DependentUpon>AudioPageSettings.xaml</DependentUpon>
+        <Compile Update="Views\SettingsPopup.xaml.cs">
+          <DependentUpon>SettingsPopup.xaml</DependentUpon>
+        </Compile>
+        <Compile Update="Views\HelpPopup.xaml.cs">
+          <DependentUpon>HelpPopup.xaml</DependentUpon>
         </Compile>
     </ItemGroup>
 
@@ -141,7 +144,10 @@
       <MauiXaml Update="TestRandom.xaml">
         <Generator>MSBuild:Compile</Generator>
       </MauiXaml>
-      <MauiXaml Update="UI\AudioPageSettings.xaml">
+      <MauiXaml Update="Views\SettingsPopup.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </MauiXaml>
+      <MauiXaml Update="Views\HelpPopup.xaml">
         <Generator>MSBuild:Compile</Generator>
       </MauiXaml>
     </ItemGroup>

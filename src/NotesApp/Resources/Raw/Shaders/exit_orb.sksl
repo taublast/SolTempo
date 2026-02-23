@@ -1,5 +1,4 @@
-// Fast Fancy Popup EXIT: Reversed Entrance Logic
-// Re-uses the exact same entrance math with time reversed + mask/opacity flipped
+// Fast Fancy Popup EXIT: Reversed Entrance — hard-discard out-of-bounds (no clamp edge bleed)
 
 uniform float4 iMouse;
 uniform float  iTime;
@@ -7,7 +6,7 @@ uniform float2 iResolution;
 uniform float2 iImageResolution;
 uniform shader iImage1;
 uniform float2 iOffset;
-uniform float  progress;     // 0 = fully visible / exact original, 1 = gone
+uniform float  progress;
 uniform float2 iCenter;
 
 const float PI = 3.14159265359;
@@ -17,16 +16,14 @@ half4 main(float2 fragCoord) {
     float2 uv = inputCoord / iImageResolution;
 
     float2 center = iCenter;
-    float2 delta   = uv - center;
-    float  dist    = length(delta);
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
 
     float raw_t = clamp(progress, 0.0, 1.0);
-    float t = 1.0 - raw_t;           // ← reverse time: at progress=0 → t=1 (full), progress=1 → t=0 (gone)
-
-    float invT = 1.0 - t;            // = raw_t = progress
+    float t     = 1.0 - raw_t;  // reverse: progress=0 → t=1 (full), progress=1 → t=0 (gone)
 
     // ──────────────────────────────────────────────
-    // Reuse entrance scale logic (now shrinking instead of growing)
+    // Reuse entrance scale logic (now shrinking)
     float baseScale = mix(0.025, 1.0, t);
 
     float overshoot = 0.0;
@@ -34,60 +31,30 @@ half4 main(float2 fragCoord) {
         float phase = t * 18.0 - 1.2;
         overshoot = 0.24 * exp(-t * 9.0) * sin(phase);
     }
-    float scale = baseScale * (1.0 + overshoot);
-    scale = clamp(scale, 0.02, 1.22);
-
-    // Hard lock at original size when barely started (progress ≈ 0)
-    if (raw_t < 0.005) {
-        scale = 1.0;
-    }
+    float scale = clamp(baseScale * (1.0 + overshoot), 0.02, 1.22);
+    if (raw_t < 0.005) scale = 1.0;
 
     // ──────────────────────────────────────────────
-    // Mask: flipped direction compared to entrance
-    // Entrance grows mask from small → big
-    // Exit shrinks visible area from big → small
-    float mask = smoothstep(1.08, 0.85, dist * (1.0 / max(scale, 0.001)));  
-    // ^ Using 1/scale approximates reverse growth cleanly
-
-    // ──────────────────────────────────────────────
-    // Fake sphere / refraction — same as entrance but faded with progress
-    float2 norm   = normalize(delta);
-    float  sphere = max(0.0, 1.0 - dist * scale * 1.4);
-    float  refractAmt = 0.07 * sphere * (1.0 - raw_t);   // fade out with progress (linear)
+    // Fake sphere / refraction
+    float2 norm      = normalize(delta);
+    float  sphere    = max(0.0, 1.0 - dist * scale * 1.4);
+    float  refractAmt = 0.07 * sphere * (1.0 - raw_t);
 
     float2 refractUV = uv + norm * refractAmt;
     refractUV = center + (refractUV - center) / scale;
-    refractUV = clamp(refractUV, float2(-0.05), float2(1.05));
+
+    // Hard discard pixels that map outside the image — prevents TileMode.Clamp edge bleed
+    if (refractUV.x < 0.0 || refractUV.x > 1.0 || refractUV.y < 0.0 || refractUV.y > 1.0) {
+        return half4(0.0);
+    }
 
     float2 sampleCoord = refractUV * iImageResolution;
     half4 col = iImage1.eval(sampleCoord);
 
     // ──────────────────────────────────────────────
-    // Rim + moving highlight — fade with progress
-    float rim = 1.0 - abs(dot(norm, normalize(float2(0.8, 1.0))));
-    rim = pow(rim, 3.5) * 1.35 * sphere;
-
-    float shineAngle = atan(delta.y, delta.x) * 5.0;
-    float shine = rim * (0.7 + 0.5 * sin(iTime * 2.4 + shineAngle));
-
-    col.rgb += shine * float3(1.13, 1.08, 1.02) * (1.0 - raw_t) * 1.1;
-
-    // Inner glow — fade with progress
-    float glow = exp(-dist * scale * 15.0) * 1.5 * (1.0 - raw_t);
-    col.rgb += glow * float3(0.78, 0.90, 1.28) * 0.45;
-
-    // ──────────────────────────────────────────────
-    // Opacity — reverse of entrance ramp: full → quick drop at end
-    float opacity = mix(1.0, 0.0, raw_t * 5.0);   // aggressive late drop
-    opacity = clamp(opacity, 0.0, 1.0);
-
-    col.a *= mask * opacity;
-
-    // Safety: exact original at start of exit
-    if (raw_t < 0.01) {
-        col = iImage1.eval(uv * iImageResolution);
-        col.a = 1.0;
-    }
+    // Opacity — full → quick drop at end
+    float opacity = clamp(1.0 - raw_t * 5.0, 0.0, 1.0);
+    col.a *= opacity;
 
     return col;
 }

@@ -123,8 +123,10 @@ namespace MusicNotes.Audio
         {
             base.OnWillDisposeWithChildren();
 
-            _paintGauge?.Dispose(); _paintGauge = null;
-            _paintNeedle?.Dispose(); _paintNeedle = null;
+            _paintGauge?.Dispose(); 
+            _paintGauge = null;
+            _paintNeedle?.Dispose(); 
+            _paintNeedle = null;
         }
 
 

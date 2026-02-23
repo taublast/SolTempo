@@ -1,0 +1,94 @@
+// Supernova Clean Exit
+// Elastic spin-zoom out + chromatic aberration + sphere refraction + rim glow
+// No star rays, no rainbow — pure geometry and fades
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;   // 0 = fully visible, 1 = gone
+uniform float2 iCenter;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  raw_t      = clamp(progress, 0.0, 1.0);
+
+    if (raw_t < 0.005) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    float  t      = 1.0 - raw_t;
+    float  invT   = raw_t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+
+    // ── Same elastic scale as entrance (reversed time) ────────────────
+    float baseScale = mix(0.025, 1.0, t);
+    float overshoot = 0.0;
+    if (t < 0.48) {
+        float phase = t * 18.0 - 1.2;
+        overshoot = 0.30 * exp(-t * 8.5) * sin(phase);
+    }
+    float scale = baseScale * (1.0 + overshoot);
+    scale = clamp(scale, 0.02, 1.28);
+
+    // ── Spin in opposite direction ────────────────────────────────────
+    float spinAngle = invT * invT * PI * 0.95;
+    float cosS = cos(-spinAngle), sinS = sin(-spinAngle);
+    float2 spunDelta = float2(
+        delta.x * cosS - delta.y * sinS,
+        delta.x * sinS + delta.y * cosS
+    );
+
+    // ── Chromatic aberration grows as it implodes ─────────────────────
+    float  split   = invT * 0.055;
+    float2 sampleR = center + spunDelta / (scale * (1.0 + split));
+    float2 sampleG = center + spunDelta / scale;
+    float2 sampleB = center + spunDelta / (scale * max(0.01, 1.0 - split * 0.65));
+
+    if (sampleG.x < 0.0 || sampleG.x > 1.0 || sampleG.y < 0.0 || sampleG.y > 1.0) return half4(0.0);
+    sampleR = clamp(sampleR, float2(0.0), float2(1.0));
+    sampleB = clamp(sampleB, float2(0.0), float2(1.0));
+
+    half4 col;
+    col.r = iImage1.eval(sampleR * iImageResolution).r;
+    col.g = iImage1.eval(sampleG * iImageResolution).g;
+    col.b = iImage1.eval(sampleB * iImageResolution).b;
+    col.a = iImage1.eval(sampleG * iImageResolution).a;
+
+    // ── Circular mask (orb style) ──────────────────────────────────────
+    float mask = smoothstep(1.08, 0.85, dist * scale);
+
+    // ── Sphere refraction ─────────────────────────────────────────────
+    float2 norm    = normalize(spunDelta + float2(0.00001));
+    float  sphere  = max(0.0, 1.0 - dist * scale * 1.4);
+    float  refract = 0.07 * sphere * invT;
+    float2 refractUV = uv + norm * refract;
+    refractUV = center + (refractUV - center) / scale;
+    if (refractUV.x >= 0.0 && refractUV.x <= 1.0 && refractUV.y >= 0.0 && refractUV.y <= 1.0) {
+        half4 refractCol = iImage1.eval(refractUV * iImageResolution);
+        col.rgb = mix(col.rgb, refractCol.rgb, clamp(t * 3.0, 0.0, 1.0));
+    }
+
+    // ── Inner glow ─────────────────────────────────────────────────────
+    //float glow = exp(-dist * scale * 15.0) * 1.5 * invT;
+    //col.rgb += glow * float3(0.78, 0.90, 1.28) * 0.45;
+
+    // ── Opacity: full → quick drop at end (orb style) ─────────────────
+    float opacity = mix(1.0, 0.0, raw_t * 5.0);
+    opacity = clamp(opacity, 0.0, 1.0);
+    col.a *= mask * opacity;
+
+    if (raw_t < 0.01) {
+        col = iImage1.eval(uv * iImageResolution);
+        col.a = 1.0;
+    }
+
+    return col;
+}

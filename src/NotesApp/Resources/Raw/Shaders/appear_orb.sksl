@@ -1,5 +1,4 @@
-// Fast Fancy Popup: More Linear Entrance - Elastic Glass Orb
-// Strong early energy → linear-feel decay → exact 1:1 at progress=1.0
+// Fast Fancy Popup: Elastic Glass Orb — hard-discard out-of-bounds (no clamp edge bleed)
 
 uniform float4 iMouse;
 uniform float  iTime;
@@ -10,6 +9,10 @@ uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
 
+// use hard discard instead of clamp. 
+// avoid: clamp(refractUV, -0.05, 1.05) + TileMode.Clamp => will stretch the edge pixel color 
+// across the entire out-of-bounds region creating a buggy look.
+
 const float PI = 3.14159265359;
 
 half4 main(float2 fragCoord) {
@@ -17,11 +20,11 @@ half4 main(float2 fragCoord) {
     float2 uv = inputCoord / iImageResolution;
 
     float2 center = iCenter;
-    float2 delta   = uv - center;
-    float  dist    = length(delta);
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
 
-    float t = clamp(progress, 0.0, 1.0);
-    float invT = 1.0 - t;   // linear remaining time — used to fade effects cleanly
+    float t    = clamp(progress, 0.0, 1.0);
+    float invT = 1.0 - t;
 
     // ──────────────────────────────────────────────
     // Scale: small early overshoot → linear approach to 1.0
@@ -32,50 +35,30 @@ half4 main(float2 fragCoord) {
         float phase = t * 18.0 - 1.2;
         overshoot = 0.24 * exp(-t * 9.0) * sin(phase);
     }
-    float scale = baseScale * (1.0 + overshoot);
-    scale = clamp(scale, 0.02, 1.22);
-
-    // Hard lock at final size (prevents any float drift)
-    if (t > 0.995) {
-        scale = 1.0;
-    }
-
-    // Soft circular mask — reaches full coverage reasonably fast
-    float mask = smoothstep(1.08, 0.85, dist * scale);
+    float scale = clamp(baseScale * (1.0 + overshoot), 0.02, 1.22);
+    if (t > 0.995) scale = 1.0;
 
     // ──────────────────────────────────────────────
-    // Fake sphere / refraction — fades linearly with remaining time
-    float2 norm   = normalize(delta);
-    float  sphere = max(0.0, 1.0 - dist * scale * 1.4);
-    float  refractAmt = 0.07 * sphere * invT;   // pure linear fade
+    // Fake sphere / refraction
+    float2 norm      = normalize(delta);
+    float  sphere    = max(0.0, 1.0 - dist * scale * 1.4);
+    float  refractAmt = 0.07 * sphere * invT;
 
     float2 refractUV = uv + norm * refractAmt;
     refractUV = center + (refractUV - center) / scale;
-    refractUV = clamp(refractUV, float2(-0.05), float2(1.05));
+
+    // Hard discard pixels that map outside the image — prevents TileMode.Clamp edge bleed
+    if (refractUV.x < 0.0 || refractUV.x > 1.0 || refractUV.y < 0.0 || refractUV.y > 1.0) {
+        return half4(0.0);
+    }
 
     float2 sampleCoord = refractUV * iImageResolution;
     half4 col = iImage1.eval(sampleCoord);
 
     // ──────────────────────────────────────────────
-    // Rim + moving highlight — intensity drops linearly
-    float rim = 1.0 - abs(dot(norm, normalize(float2(0.8, 1.0))));
-    rim = pow(rim, 3.5) * 1.35 * sphere;
-
-    float shineAngle = atan(delta.y, delta.x) * 5.0;
-    float shine = rim * (0.7 + 0.5 * sin(iTime * 2.4 + shineAngle));
-
-    col.rgb += shine * float3(1.13, 1.08, 1.02) * invT * 1.1;
-
-    // Inner glow — also linear fade
-    float glow = exp(-dist * scale * 15.0) * 1.5 * invT;
-    col.rgb += glow * float3(0.78, 0.90, 1.28) * 0.45;
-
-    // ──────────────────────────────────────────────
     // Opacity — quick linear-ish ramp, then full
-    float opacity = mix(0.0, 1.0, t * 5.0);   // aggressive early ramp
-    opacity = clamp(opacity, 0.0, 1.0);
-
-    col.a *= mask * opacity;
+    float opacity = clamp(t * 5.0, 0.0, 1.0);
+    col.a *= opacity;
 
     return col;
 }

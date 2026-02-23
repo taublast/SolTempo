@@ -49,9 +49,10 @@ half4 main(float2 fragCoord) {
     float2 rotR = float2(delta.x * cosC - delta.y * sinC, delta.x * sinC + delta.y * cosC);
     float2 rotB = float2(delta.x * cosD - delta.y * sinD, delta.x * sinD + delta.y * cosD);
 
-    float2 sampleG = clamp(center + rotDelta / scale, float2(0.0), float2(1.0));
-    float2 sampleR = clamp(center + rotR    / scale, float2(0.0), float2(1.0));
-    float2 sampleB = clamp(center + rotB    / scale, float2(0.0), float2(1.0));
+    float2 sampleG = center + rotDelta / scale;
+    if (sampleG.x < 0.0 || sampleG.x > 1.0 || sampleG.y < 0.0 || sampleG.y > 1.0) return half4(0.0);
+    float2 sampleR = clamp(center + rotR / scale, float2(0.0), float2(1.0));
+    float2 sampleB = clamp(center + rotB / scale, float2(0.0), float2(1.0));
 
     half4 col;
     col.r = iImage1.eval(sampleR * iImageResolution).r;
