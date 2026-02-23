@@ -31,7 +31,7 @@ namespace MusicNotes.UI;
 
         private bool _isLayoutLandscape;
         private SkiaShape _captureButtonOuter;
-        private AudioInstrumentTuner _musicNotes;
+        public AudioInstrumentTuner NotesModule;
         private SkiaControl _musicNotesWrapper;
         private AudioVisualizer _musicBPMDetector;
         private SkiaControl _musicBPMDetectorWrapper;
@@ -119,7 +119,7 @@ namespace MusicNotes.UI;
                                     Margin = new (16,16,16,0),
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
-                                }.Assign(out _musicNotes),
+                                }.Assign(out NotesModule),
 
                             }
                         }.Assign(out _musicNotesWrapper),

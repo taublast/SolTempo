@@ -1,0 +1,73 @@
+// Digital Glitch Exit
+// Popup disintegrates into digital static — pixel blocks corrupt over time
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;   // 0 = visible, 1 = gone
+uniform float2 iCenter;
+
+float rand(float2 p) {
+    return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  raw_t      = clamp(progress, 0.0, 1.0);
+
+    if (raw_t < 0.01) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    float invT = 1.0 - raw_t;
+
+    // Each block corrupts at a random time; 1.0 = glitching, 0.0 = still intact
+    float  blockSize   = 0.06;
+    float2 blockId     = floor(uv / blockSize);
+    float  corruptTime = rand(blockId) * 0.80;
+    float  isGlitching = step(corruptTime, raw_t);
+
+    // Scanline jitter grows with progress
+    float2 rowId     = float2(floor(uv.y / 0.04), floor(iTime * 15.0));
+    float  shift     = (rand(rowId) - 0.5) * 0.10 * raw_t;
+    float2 shiftedUV = float2(uv.x + shift, uv.y);
+
+    float2 jitter    = (float2(rand(blockId + 0.5), rand(blockId + 1.7)) - 0.5) * 0.40;
+    float2 scrambled = fract(uv + jitter);
+
+    // Intact blocks use shifted UV, corrupted blocks use scrambled
+    float2 finalUV = mix(shiftedUV, scrambled, isGlitching);
+    finalUV = clamp(finalUV, float2(0.0), float2(1.0));
+
+    // Chromatic aberration grows as corruption spreads
+    float  chromaAmt = raw_t * 0.020;
+    float2 aberDir   = normalize(uv - iCenter + float2(0.001));
+    half4  col;
+    col.r = iImage1.eval((finalUV + aberDir * chromaAmt      ) * iImageResolution).r;
+    col.g = iImage1.eval( finalUV                              * iImageResolution).g;
+    col.b = iImage1.eval((finalUV - aberDir * chromaAmt * 0.8) * iImageResolution).b;
+    col.a = iImage1.eval( finalUV                              * iImageResolution).a;
+
+    // CRT scanlines intensify
+    float scan = 0.80 + 0.20 * sin(uv.y * 100.0 + iTime * 25.0);
+    col.rgb *= mix(1.0, scan, raw_t * 0.45);
+
+    // Corrupted pixels replaced with digital noise
+    float noiseVal   = rand(uv * 120.0 + float2(floor(iTime * 25.0), 0.0));
+    half3 noiseColor = half3(noiseVal * 0.25, noiseVal * 0.85 + 0.1, noiseVal * 0.55 + 0.3);
+    col.rgb = mix(col.rgb, noiseColor, isGlitching * 0.75);
+
+    // Digital grid flashes as content breaks apart
+    float gx = step(0.94, fract(uv.x * 16.0));
+    float gy = step(0.94, fract(uv.y * 16.0));
+    col.rgb += (gx + gy) * raw_t * 0.10 * float3(0.0, 0.7, 1.0);
+
+    float opacity = 1.0 - smoothstep(0.78, 1.0, raw_t);
+    col.a *= opacity;
+
+    return col;
+}

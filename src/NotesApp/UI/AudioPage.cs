@@ -89,7 +89,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
     {
         if (_musicNotesWrapper.IsVisible)
         {
-            _musicNotes.AddSample(sample);
+            NotesModule.AddSample(sample);
         }
 
         if (_equalizer.IsVisible)

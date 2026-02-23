@@ -1,0 +1,116 @@
+// Supernova Exit
+// Full-image elastic spin-zoom out + star rays at end + rainbow ring contracting
+// Mirror of appearance — reverse time, opposite spin direction
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;   // 0 = fully visible, 1 = gone
+uniform float2 iCenter;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  raw_t      = clamp(progress, 0.0, 1.0);
+
+    if (raw_t < 0.005) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    // Reverse time so t=1 = full visible, t=0 = gone
+    float  t      = 1.0 - raw_t;
+    float  invT   = raw_t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+    float  angle  = atan(delta.y, delta.x);
+
+    // ── Same elastic scale as entrance (reversed time) ────────────────
+    float baseScale = mix(0.025, 1.0, t);
+    float overshoot = 0.0;
+    if (t < 0.48) {
+        float phase = t * 18.0 - 1.2;
+        overshoot = 0.30 * exp(-t * 8.5) * sin(phase);
+    }
+    float scale = baseScale * (1.0 + overshoot);
+    scale = clamp(scale, 0.02, 1.28);
+
+    // ── Spin in opposite direction (spins OUT) ────────────────────────
+    float spinAngle = invT * invT * PI * 0.65;
+    float cosS = cos(-spinAngle), sinS = sin(-spinAngle);
+    float2 spunDelta = float2(
+        delta.x * cosS - delta.y * sinS,
+        delta.x * sinS + delta.y * cosS
+    );
+
+    // ── Chromatic aberration grows as it implodes ─────────────────────
+    float  split   = invT * 0.055;
+    float2 sampleR = center + spunDelta / (scale * (1.0 + split));
+    float2 sampleG = center + spunDelta / scale;
+    float2 sampleB = center + spunDelta / (scale * max(0.01, 1.0 - split * 0.65));
+
+    sampleR = clamp(sampleR, float2(0.0), float2(1.0));
+    sampleG = clamp(sampleG, float2(0.0), float2(1.0));
+    sampleB = clamp(sampleB, float2(0.0), float2(1.0));
+
+    half4 col;
+    col.r = iImage1.eval(sampleR * iImageResolution).r;
+    col.g = iImage1.eval(sampleG * iImageResolution).g;
+    col.b = iImage1.eval(sampleB * iImageResolution).b;
+    col.a = iImage1.eval(sampleG * iImageResolution).a;
+
+    // ── Circular mask (orb style) ──────────────────────────────────────
+    float mask = smoothstep(1.08, 0.85, dist * scale);
+    // Start fully visible, let mask take over gradually
+    if (raw_t < 0.005) mask = 1.0;
+
+    // ── Star rays appear at the end of exit (as it vanishes) ──────────
+    float starShape = pow(abs(sin(angle * 4.0)), 20.0);
+    float starBurst = starShape * exp(-dist * dist * 35.0) * exp(-t * 5.8) * 9.0;
+    col.rgb += starBurst * float3(1.5, 1.1, 0.35);
+
+    // ── Rainbow ring contracts inward ──────────────────────────────────
+    float ringR    = t * 0.85;    // shrinks from 0.85 to 0
+    float ringGlow = exp(-abs(dist - ringR) * 45.0) * invT * 4.0;
+    float hue      = fract(angle / (2.0 * PI) - iTime * 1.4);
+    float3 rainbow = 0.5 + 0.5 * cos(6.28 * (hue + float3(0.0, 0.333, 0.667)));
+    col.rgb       += ringGlow * rainbow * 2.5;
+
+    // ── Sphere refraction ─────────────────────────────────────────────
+    float2 norm    = normalize(spunDelta + float2(0.00001));
+    float  sphere  = max(0.0, 1.0 - dist * scale * 1.4);
+    float  refract = 0.07 * sphere * invT;
+    float2 refractUV = uv + norm * refract;
+    refractUV = center + (refractUV - center) / scale;
+    refractUV = clamp(refractUV, float2(-0.05), float2(1.05));
+    half4 refractCol = iImage1.eval(refractUV * iImageResolution);
+    col.rgb = mix(col.rgb, refractCol.rgb, clamp(t * 3.0, 0.0, 1.0));
+
+    // ── Rim + highlight ────────────────────────────────────────────────
+    float  rim   = 1.0 - abs(dot(norm, normalize(float2(0.8, 1.0))));
+    rim = pow(rim, 3.5) * 1.35 * sphere;
+    float  shine = rim * (0.7 + 0.5 * sin(iTime * 2.4 + angle * 5.0));
+    col.rgb += shine * float3(1.13, 1.08, 1.02) * invT * 1.2;
+
+    // ── Inner glow ─────────────────────────────────────────────────────
+    float glow = exp(-dist * scale * 15.0) * 1.5 * invT;
+    col.rgb += glow * float3(0.78, 0.90, 1.28) * 0.45;
+
+    // ── Opacity: full → quick drop at end (orb style) ─────────────────
+    float opacity = mix(1.0, 0.0, raw_t * 5.0);
+    opacity = clamp(opacity, 0.0, 1.0);
+    col.a *= mask * opacity;
+
+    // Safety: pixel-perfect at exit start
+    if (raw_t < 0.01) {
+        col = iImage1.eval(uv * iImageResolution);
+        col.a = 1.0;
+    }
+
+    return col;
+}

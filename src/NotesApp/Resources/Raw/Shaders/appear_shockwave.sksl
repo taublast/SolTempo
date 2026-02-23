@@ -1,0 +1,62 @@
+// Shockwave Entrance
+// Popup bursts in — a ring of energy expands outward from center
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  t          = clamp(progress, 0.0, 1.0);
+
+    if (t >= 0.995) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    float  invT   = 1.0 - t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+    float2 norm   = normalize(delta + float2(0.00001));
+
+    // Shockwave ring expands from 0 to full
+    float waveR     = t * 1.05;
+    float waveDelta = dist - waveR;
+    float waveWidth = 0.07 + 0.05 * invT;
+    float waveShape = exp(-(waveDelta * waveDelta) / (waveWidth * waveWidth));
+
+    // Pixels near the ring get pushed radially outward (lens/bulge effect)
+    float2 sampleUV = uv + norm * (waveShape * invT * 0.055);
+    sampleUV = clamp(sampleUV, float2(0.0), float2(1.0));
+    half4 col = iImage1.eval(sampleUV * iImageResolution);
+
+    // Circular reveal: content visible only inside the expanding wave
+    float revealR    = t * 1.05;
+    float revealMask = smoothstep(revealR + 0.07, revealR - 0.01, dist);
+    revealMask = mix(revealMask, 1.0, smoothstep(0.92, 1.0, t));
+
+    // Glowing ring: warm yellow-white at the wave front
+    float ringGlow = waveShape * invT * 3.5;
+    col.rgb += ringGlow * mix(float3(1.5, 1.1, 0.4), float3(1.2, 1.1, 1.0),
+                              smoothstep(0.0, 0.6, waveShape));
+
+    // Trailing blue-cyan afterglow ring
+    float trailR    = max(0.0, t * 1.05 - 0.13);
+    float trailGlow = exp(-abs(dist - trailR) * 45.0) * invT * 1.2;
+    col.rgb += trailGlow * float3(0.4, 0.75, 1.8);
+
+    // Bright central flash at the very start
+    float flash = exp(-dist * 12.0) * exp(-t * 9.0) * 4.0;
+    col.rgb += flash * float3(1.5, 1.2, 0.8);
+
+    float opacity = smoothstep(0.0, 0.08, t);
+    col.a *= revealMask * opacity;
+
+    return col;
+}

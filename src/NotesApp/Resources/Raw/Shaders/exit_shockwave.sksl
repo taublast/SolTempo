@@ -1,0 +1,61 @@
+// Shockwave Exit
+// Popup implodes — an energy wave collapses inward from the edges
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;   // 0 = visible, 1 = gone
+uniform float2 iCenter;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  raw_t      = clamp(progress, 0.0, 1.0);
+
+    if (raw_t < 0.01) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    float  invT   = 1.0 - raw_t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+    float2 norm   = normalize(delta + float2(0.00001));
+
+    // Implosion wave starts at edge and shrinks inward
+    float waveR     = invT * 1.05;
+    float waveDelta = dist - waveR;
+    float waveWidth = 0.07 + 0.05 * raw_t;
+    float waveShape = exp(-(waveDelta * waveDelta) / (waveWidth * waveWidth));
+
+    // Pixels near ring get pulled inward
+    float2 sampleUV = uv - norm * (waveShape * raw_t * 0.055);
+    sampleUV = clamp(sampleUV, float2(0.0), float2(1.0));
+    half4 col = iImage1.eval(sampleUV * iImageResolution);
+
+    // Circular mask shrinking inward (fully open at start)
+    float revealMask = smoothstep(waveR + 0.07, waveR - 0.01, dist);
+    revealMask = mix(1.0, revealMask, smoothstep(0.0, 0.08, raw_t));
+
+    // Glowing ring at the collapsing wave front
+    float ringGlow = waveShape * raw_t * 3.5;
+    col.rgb += ringGlow * mix(float3(1.5, 1.1, 0.4), float3(1.2, 1.1, 1.0),
+                              smoothstep(0.0, 0.6, waveShape));
+
+    // Trailing afterglow (just outside the collapsing ring)
+    float trailR    = min(1.1, invT * 1.05 + 0.13);
+    float trailGlow = exp(-abs(dist - trailR) * 45.0) * raw_t * 1.2;
+    col.rgb += trailGlow * float3(0.4, 0.75, 1.8);
+
+    // Final implosion flash at center
+    float flash = exp(-dist * 12.0) * exp(-invT * 9.0) * 4.0;
+    col.rgb += flash * float3(1.5, 1.2, 0.8);
+
+    float opacity = 1.0 - smoothstep(0.78, 1.0, raw_t);
+    col.a *= revealMask * opacity;
+
+    return col;
+}

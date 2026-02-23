@@ -6,73 +6,44 @@ using MusicNotes.UI;
 
 namespace ShadersCamera.Views;
 
-public partial class AudioPageSettings : SkiaLayer
+public partial class AudioPageSettings : AnimatedPopup
 {
     private readonly AudioPage _parentPage;
 
     private bool isInitializing;
 
-    private AnimatedShaderEffect _entrance;
-    private AnimatedShaderEffect _exit;
-
-    AudioRecorder Recorder => _parentPage?.Recorder;
-
-    public void Show()
+    public override void Show()
     {
         _ = UpdateControls();
 
-
-        if (_entrance == null)
-        {
-            _entrance = new AnimatedShaderEffect()
-            {
-                UseBackground = PostRendererEffectUseBackgroud.Always,
-                ShaderSource = @"Shaders\appear_orb.sksl",
-                DurationMs = 200
-            };
-            _entrance.Completed += (sender, args) =>
-            {
-                Animated.VisualEffects.Remove(_entrance);
-            };
-        }
-
-        if (!Animated.VisualEffects.Contains(_entrance))
-        {
-            Animated.VisualEffects.Add(_entrance);
-        }
-
-        IsVisible = true;
-        _entrance.Play();
-
+        base.Show();
     }
 
-    public void Close ()
+    public override void Close()
     {
+        base.Close();
+
         UserSettings.FillFromHardware(Recorder);
         UserSettings.Save();
-
-        if (_exit == null)
-        {
-            _exit = new AnimatedShaderEffect()
-            {
-                UseBackground = PostRendererEffectUseBackgroud.Once,
-                ShaderSource = @"Shaders\exit_orb.sksl",
-                DurationMs=200
-            };
-            _exit.Completed += (sender, args) =>
-            {
-                IsVisible = false;
-                Animated.VisualEffects.Remove(_exit);
-            };
-        }
-
-        if (!Animated.VisualEffects.Contains(_exit))
-        {
-            Animated.VisualEffects.Add(_exit);
-            _exit.Play();
-        }
-
     }
+
+    AudioRecorder Recorder => _parentPage?.Recorder;
+
+    AudioInstrumentTuner Notes => _parentPage?.NotesModule;
+
+    public AudioPageSettings(AudioPage page)
+    {
+        InitializeComponent();
+
+        SetAnimatable(Animated);
+
+        _parentPage = page;
+
+        _ = UpdateControls();
+    }
+
+
+
 
     public override void OnWillDisposeWithChildren()
     {
@@ -83,7 +54,6 @@ public partial class AudioPageSettings : SkiaLayer
         _entrance?.Dispose();
         _entrance = null;
     }
-
 
 
     async Task <string> GetAudioSourceText(AudioRecorder CameraControl)
@@ -98,7 +68,24 @@ public partial class AudioPageSettings : SkiaLayer
             }
         }
 
-        return "System Default Audio";
+        return "Default";
+    }
+
+    string GetNotationText(int value)
+    {
+        switch (value)
+        {
+            case 0:
+                return "Letter notation";
+            case 1:
+                return "Fixed-do";
+            case 2:
+                return "Movable-do";
+            case 3:
+                return "Cyrillic solfeggio";
+            default:
+                return "Default";
+        }
     }
 
     async Task UpdateControls()
@@ -111,17 +98,13 @@ public partial class AudioPageSettings : SkiaLayer
         //selectors
         LabelSource.Text = await GetAudioSourceText(Recorder);
 
+        SwitchSemi.IsToggled = Notes.UseSemiNotes;
+
+        LabelNotation.Text = GetNotationText(Notes.Notation);
+
         isInitializing = false;
     }
 
-    public AudioPageSettings(AudioPage page)
-	{
-		InitializeComponent();
-
-        _parentPage = page;
-
-        _ = UpdateControls();
-    }
 
     private void UseGainSwitch_OnToggled(object sender, bool value)
     {
@@ -199,5 +182,18 @@ public partial class AudioPageSettings : SkiaLayer
     private void AudioPageSettings_OnTapped(object sender, ControlTappedEventArgs e)
     {
         Close();
+    }
+
+    private void UseSemiSwitch_OnToggled(object sender, bool value)
+    {
+        if (isInitializing)
+            return;
+
+        Notes.UseSemiNotes = value;
+    }
+
+    private void SelectNotation(object sender, ControlTappedEventArgs e)
+    {
+    
     }
 }

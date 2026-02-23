@@ -1,0 +1,90 @@
+// Vortex Portal Entrance — Enhanced
+// Full-image uniform spin through an expanding rainbow portal + chromatic aberration
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  t          = clamp(progress, 0.0, 1.0);
+
+    if (t >= 0.995) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    float  invT   = 1.0 - t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+    float  angle  = atan(delta.y, delta.x);
+
+    // Cubic ease-out for scale
+    float te = 1.0 - invT * invT * invT;
+
+    // Scale: tiny portal grows to full size
+    float scale = mix(0.03, 1.0, te);
+
+    // Full-image uniform swirl — entire content spins, decreasing to zero
+    float swirlAngle = invT * PI * 3.2;
+    float cosA = cos(swirlAngle), sinA = sin(swirlAngle);
+    float2 rotDelta = float2(
+        delta.x * cosA - delta.y * sinA,
+        delta.x * sinA + delta.y * cosA
+    );
+
+    // Chromatic aberration: channels diverge at different swirl angles
+    float chromaOff = invT * 0.018;
+    float cosC = cos(swirlAngle + chromaOff), sinC = sin(swirlAngle + chromaOff);
+    float cosD = cos(swirlAngle - chromaOff), sinD = sin(swirlAngle - chromaOff);
+
+    float2 rotR = float2(delta.x * cosC - delta.y * sinC, delta.x * sinC + delta.y * cosC);
+    float2 rotB = float2(delta.x * cosD - delta.y * sinD, delta.x * sinD + delta.y * cosD);
+
+    float2 sampleG = clamp(center + rotDelta / scale, float2(0.0), float2(1.0));
+    float2 sampleR = clamp(center + rotR    / scale, float2(0.0), float2(1.0));
+    float2 sampleB = clamp(center + rotB    / scale, float2(0.0), float2(1.0));
+
+    half4 col;
+    col.r = iImage1.eval(sampleR * iImageResolution).r;
+    col.g = iImage1.eval(sampleG * iImageResolution).g;
+    col.b = iImage1.eval(sampleB * iImageResolution).b;
+    col.a = iImage1.eval(sampleG * iImageResolution).a;
+
+    // Growing circular portal mask
+    float portalR = te + 0.01;
+    float mask    = smoothstep(portalR + 0.06, portalR - 0.02, dist);
+    mask = mix(mask, 1.0, smoothstep(0.90, 1.0, te));
+
+    // Vivid rainbow ring at portal edge — twice as bright as before
+    float edgeDist = abs(dist - portalR * 0.90);
+    float ringGlow = exp(-edgeDist * 48.0) * invT * 6.0;
+    float hue      = fract(angle / (2.0 * PI) + iTime * 0.9);
+    float3 rainbow = 0.5 + 0.5 * cos(6.28 * (hue + float3(0.0, 0.333, 0.667)));
+    col.rgb       += ringGlow * rainbow;
+
+    // Second tighter ring inside — gives depth to the portal edge
+    float ring2Glow = exp(-edgeDist * 120.0) * invT * 3.0;
+    col.rgb += ring2Glow * float3(1.2, 1.1, 1.5);
+
+    // Rotating inner sparkle band (small animated dots around the ring)
+    float sparkle = pow(max(0.0, sin(angle * 10.0 + iTime * 8.0)), 8.0);
+    col.rgb += sparkle * exp(-edgeDist * 60.0) * invT * 2.5 * float3(1.5, 1.2, 0.5);
+
+    // Energy core burst from center at startup
+    float flash = exp(-dist * 13.0) * exp(-t * 7.0) * 3.0;
+    col.rgb += flash * float3(0.6, 0.8, 1.7);
+
+    float opacity = smoothstep(0.0, 0.15, t);
+    col.a *= mask * opacity;
+
+    return col;
+}

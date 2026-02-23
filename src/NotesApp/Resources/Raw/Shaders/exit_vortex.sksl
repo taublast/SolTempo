@@ -1,0 +1,90 @@
+// Vortex Portal Exit — Enhanced
+// Full-image uniform spin into a collapsing rainbow portal + chromatic aberration
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform shader iImage1;
+uniform float2 iOffset;
+uniform float  progress;   // 0 = fully visible, 1 = gone
+uniform float2 iCenter;
+
+const float PI = 3.14159265359;
+
+half4 main(float2 fragCoord) {
+    float2 inputCoord = fragCoord - iOffset;
+    float2 uv         = inputCoord / iImageResolution;
+    float  raw_t      = clamp(progress, 0.0, 1.0);
+
+    if (raw_t < 0.01) {
+        return iImage1.eval(uv * iImageResolution);
+    }
+
+    // Reverse time: t=1 at start (full), t=0 at end (gone)
+    float  t      = 1.0 - raw_t;
+    float  invT   = raw_t;
+    float2 center = iCenter;
+    float2 delta  = uv - center;
+    float  dist   = length(delta);
+    float  angle  = atan(delta.y, delta.x);
+
+    float te = 1.0 - (1.0 - t) * (1.0 - t) * (1.0 - t);
+
+    float scale = mix(0.03, 1.0, te);
+
+    // Spin in the same direction (content keeps spinning as it exits)
+    float swirlAngle = invT * PI * 3.2;
+    float cosA = cos(swirlAngle), sinA = sin(swirlAngle);
+    float2 rotDelta = float2(
+        delta.x * cosA - delta.y * sinA,
+        delta.x * sinA + delta.y * cosA
+    );
+
+    // Chromatic aberration (angle offset)
+    float chromaOff = invT * 0.018;
+    float cosC = cos(swirlAngle + chromaOff), sinC = sin(swirlAngle + chromaOff);
+    float cosD = cos(swirlAngle - chromaOff), sinD = sin(swirlAngle - chromaOff);
+
+    float2 rotR = float2(delta.x * cosC - delta.y * sinC, delta.x * sinC + delta.y * cosC);
+    float2 rotB = float2(delta.x * cosD - delta.y * sinD, delta.x * sinD + delta.y * cosD);
+
+    float2 sampleG = clamp(center + rotDelta / scale, float2(0.0), float2(1.0));
+    float2 sampleR = clamp(center + rotR    / scale, float2(0.0), float2(1.0));
+    float2 sampleB = clamp(center + rotB    / scale, float2(0.0), float2(1.0));
+
+    half4 col;
+    col.r = iImage1.eval(sampleR * iImageResolution).r;
+    col.g = iImage1.eval(sampleG * iImageResolution).g;
+    col.b = iImage1.eval(sampleB * iImageResolution).b;
+    col.a = iImage1.eval(sampleG * iImageResolution).a;
+
+    // Shrinking portal mask (full at start)
+    float portalR = te + 0.01;
+    float mask    = smoothstep(portalR + 0.06, portalR - 0.02, dist);
+    mask = mix(1.0, mask, smoothstep(0.0, 0.10, raw_t));
+
+    // Vivid rainbow ring (spins opposite direction for exit feel)
+    float edgeDist = abs(dist - portalR * 0.90);
+    float ringGlow = exp(-edgeDist * 48.0) * invT * 6.0;
+    float hue      = fract(angle / (2.0 * PI) - iTime * 0.9);
+    float3 rainbow = 0.5 + 0.5 * cos(6.28 * (hue + float3(0.0, 0.333, 0.667)));
+    col.rgb       += ringGlow * rainbow;
+
+    // Second tighter ring
+    float ring2Glow = exp(-edgeDist * 120.0) * invT * 3.0;
+    col.rgb += ring2Glow * float3(1.2, 1.1, 1.5);
+
+    // Rotating sparkle band
+    float sparkle = pow(max(0.0, sin(angle * 10.0 - iTime * 8.0)), 8.0);
+    col.rgb += sparkle * exp(-edgeDist * 60.0) * invT * 2.5 * float3(1.5, 1.2, 0.5);
+
+    // Final implosion flash at center
+    float flash = exp(-dist * 13.0) * exp(-t * 7.0) * 3.0;
+    col.rgb += flash * float3(0.6, 0.8, 1.7);
+
+    float opacity = 1.0 - smoothstep(0.78, 1.0, raw_t);
+    col.a *= mask * opacity;
+
+    return col;
+}
