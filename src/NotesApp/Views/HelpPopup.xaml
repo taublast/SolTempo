@@ -11,8 +11,7 @@
     Tapped="OnBackgroundTapped"
     VerticalOptions="Fill">
 
-    <draw:SkiaLayer x:Name="Animated" 
-                    VerticalOptions="Fill">
+    <draw:SkiaLayer x:Name="Animated" VerticalOptions="Fill">
 
         <draw:SkiaShape
             Margin="8,0"
@@ -37,7 +36,7 @@
                     <draw:SkiaStack
                         Padding="24,24,24,12"
                         HorizontalOptions="Fill"
-                        Spacing="0"
+                        Spacing="28"
                         UseCache="Image">
 
                         <!--<draw:SkiaRichLabel
@@ -55,10 +54,28 @@
                             FontFamily="FontTextTitle"
                             FontSize="14"
                             HorizontalOptions="Fill"
-                            LineSpacing="1.2"
-                            ParagraphSpacing="0.75"
+                            LineSpacing="0.9"
+                            LinkTapped="HelpContent_OnLinkTapped"
+                            ParagraphSpacing="0.66"
                             TextColor="Gainsboro"
                             UseCache="Operations" />
+
+                        <draw:SkiaRow Spacing="10" UseCache="Operations">
+
+                            <draw:SkiaSvg
+                                LockRatio="1"
+                                SvgString="{x:StaticResource SvgLogoMaui}"
+                                Tapped="TappedMaui"
+                                WidthRequest="44" />
+
+                            <draw:SkiaSvg
+                                Margin="0,-2,0,0"
+                                LockRatio="1"
+                                SvgString="{x:StaticResource SvgLogoDrawnUi}"
+                                Tapped="TappedDrawnUi"
+                                WidthRequest="52" />
+
+                        </draw:SkiaRow>
 
                     </draw:SkiaStack>
 

@@ -1,10 +1,26 @@
-# Music Notes Help
+# Pitch & Tempo  Mobile App
 
 ## What It Does
 
 Music Notes listens to your instrument or voice in real time and identifies the musical note you are playing or singing.
 
-## Modes
+On top of that another module can detect the tempo of the music being played, showing the beats per minute (BPM).
+
+## Quick Tips
+
+- Switch notes/bpm detection modules by tapping on the lower left menu button.
+
+- Hold your instrument close to the device microphone for the most accurate readings. You can also turn ON audio gain in settings.
+
+- When you tap on display card the module will reset the detection and start listening from the start.
+
+---
+
+## Pitch Detection Module
+
+best used for solfeggio traiing or instrument tuning.  
+This module listens to the audio input and detects the pitch of the sound being played or sung. It displays the detected pitch as a musical note name, along with a visual representation of how close you are to the target pitch.  
+Some options can be customised inside settings.
 
 ### Notes Mode
 
@@ -17,14 +33,6 @@ Switch **Notation** to choose how notes are labelled:
 - **Movable-do** — same syllables, root moves with key
 - **Cyrillic solfeggio** — До Ре Ми Фа Соль Ля Си
 
-### BPM Mode
-
-Analyses the audio signal to detect the tempo of the music being played. Switch to this mode with the mode button in the bottom bar.
-
-## Settings
-
-Open the settings panel with the **gear** icon.
-
 ### Detection
 
 Choose between two frequency ranges for pitch detection:
@@ -32,9 +40,20 @@ Choose between two frequency ranges for pitch detection:
 - **Instruments 60–1600 Hz** — suited for most melodic instruments
 - **Voice 80–1100 Hz** — optimised for singing
 
-### Semi-notes
+### Sharp notes
 
 Enable to display sharp and flat semitones (C#, Eb, etc.) as distinct note names rather than grouping them with their neighbours.
+
+
+## BPM Detection Module
+
+Best used for BPM detection of a music or a metronome.  
+This module analyses the audio signal to detect the tempo of the music being played. 
+It displays the beats per minute (BPM) and a visual representation of the detected tempo.  
+Note that tempo of the music can change over time inside same musical composition.
+
+
+## Audio Settings
 
 ### Audio Source
 
@@ -44,8 +63,15 @@ Select the microphone or audio input device to use. Choose **System Default** to
 
 Apply automatic gain to boost quiet input signals before analysis.
 
-## Tips
+---
 
-- Hold your instrument close to the device microphone for the most accurate readings.
-- In a noisy environment, switch **Detection** to the range that best matches the pitch of the instrument.
-- Tap the **mode** button to switch between Notes and BPM views.
+## Credits
+
+This is a MIT-licenced open-source crossplatform project, find full source code on [GitHub](https://github.com/taublast/AudioNotes).
+
+Crafted with [DrawnUI](https://drawnui.com) for .NET MAUI by [Nick Kovalsky](http://taublast.github.io).
+
+App drawn enterely on a single [SkiaSharp](https://github.com/mono/SkiaSharp) canvas.
+
+Background image by [John Matychuk](https://unsplash.com/@john_matychuk).
+

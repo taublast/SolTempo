@@ -144,7 +144,7 @@
                             <draw:SkiaRichLabel
                                 FontFamily="FontTextTitle"
                                 FontSize="16"
-                                Text="Semi-notes"
+                                Text="Sharp Notes"
                                 TextColor="White"
                                 UseCache="Operations"
                                 VerticalOptions="Center" />

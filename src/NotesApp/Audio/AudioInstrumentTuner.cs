@@ -92,7 +92,7 @@ namespace MusicNotes.Audio
             float staffWidth = width * 0.75f;
             float lineSpacing = Math.Max(2f * scale, height * 0.035f);
             // Show notes if we have a detected note (even if signal isn't perfect)
-            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, _displayStaffReferenceMidi);
+            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
 
 
 
@@ -127,6 +127,8 @@ namespace MusicNotes.Audio
             _paintGauge = null;
             _paintNeedle?.Dispose(); 
             _paintNeedle = null;
+            _paintTextSmall?.Dispose();
+            _paintTextSmall = null;
         }
 
 
@@ -184,11 +186,6 @@ namespace MusicNotes.Audio
         // Smoothing for UI
         private float _smoothCents = 0;
 
-        // Dynamic Staff Centering
-        private int _staffReferenceMidi = 71; // B4 default, will adjust to played notes
-        private int _silenceFrameCount = 0;
-        private const int SilenceThreshold = 10; // ~10 scans of silence before allowing big jumps
-
         // Render State
         private string _displayNote = placeholder;
         private string _displayNoteSolf = placeholder;
@@ -196,12 +193,12 @@ namespace MusicNotes.Audio
         private float _displayFrequency = 0;
         private float _displayCents = 0;
         private Color _displayColor = Colors.Gray;
-        private int _displayStaffReferenceMidi = 71;
         private bool _displayHasSignal = false;
         private int _swapRequested = 0;
 
         private SKPaint _paintGauge;
         private SKPaint _paintNeedle;
+        private SKPaint _paintTextSmall;
 
         public int Notation { get; set; } = 2;
 
@@ -310,16 +307,12 @@ namespace MusicNotes.Audio
             _centsBuffer?.Clear();
             _smoothCents = 0;
 
-            _staffReferenceMidi = 71;
-            _silenceFrameCount = 0;
-
             _displayNote = placeholder;
             _displayNoteSolf = placeholder;
             _displayMidiNote = 0;
             _displayFrequency = 0;
             _displayCents = 0;
             _displayColor = Colors.Gray;
-            _displayStaffReferenceMidi = 71;
             _displayHasSignal = false;
             _swapRequested = 0;
 
@@ -372,7 +365,6 @@ namespace MusicNotes.Audio
                 _displayNoteSolf = _currentNoteSolf;
                 _displayMidiNote = _currentMidiNote;
                 _displayFrequency = _currentFrequency;
-                _displayStaffReferenceMidi = _staffReferenceMidi;
                 _displayHasSignal = HasSignal;
 
                 // Smooth cents for display
@@ -457,11 +449,9 @@ namespace MusicNotes.Audio
                 Array.Clear(_noteVoteBuffer, 0, _noteVoteBuffer.Length);
                 _voteBufferHead = 0;
                 _centsBuffer.Clear();
-                _silenceFrameCount++; // Track silence for staff re-centering
                 return;
             }
             HasSignal = true;
-            _silenceFrameCount = 0; // Reset when we have signal
 
             // 2. AMDF Pitch Detection
             // Voice mode : 80–1100 Hz (bass voice E2 → soprano high C6)
@@ -616,7 +606,6 @@ namespace MusicNotes.Audio
                     break;
                     }
 
-                    UpdateStaffReference(_currentMidiNote);
                 }
 
                 // Calculate cents relative to the STABLE note (so needle shows true drift)
@@ -632,52 +621,6 @@ namespace MusicNotes.Audio
                     foreach (var c in _centsBuffer) sum += c;
                     _currentCents = sum / _centsBuffer.Count;
                 }
-            }
-        }
-
-        private void UpdateStaffReference(int detectedMidi)
-        {
-            // Calculate diatonic distance from current reference
-            int[] diatonicOffsets = { 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6 };
-            int octave = (detectedMidi / 12) - 1;
-            int noteInOctave = detectedMidi % 12;
-            int detectedStep = octave * 7 + diatonicOffsets[noteInOctave];
-
-            int refOctave = (_staffReferenceMidi / 12) - 1;
-            int refNoteInOctave = _staffReferenceMidi % 12;
-            int refStep = refOctave * 7 + diatonicOffsets[refNoteInOctave];
-
-            int stepDistance = Math.Abs(detectedStep - refStep);
-
-            // First note ever, or after long silence: center on detected note
-            if (_staffReferenceMidi == 71 && _displayMidiNote == 0) // Initial state
-            {
-                _staffReferenceMidi = detectedMidi;
-            }
-            // After silence, allow re-centering to new octave
-            else if (_silenceFrameCount >= SilenceThreshold && stepDistance > 7) // More than an octave away
-            {
-                _staffReferenceMidi = detectedMidi;
-            }
-            // If note is far from current reference (would need many ledger lines), adjust closer
-            else if (stepDistance > 6) // Outside main staff comfort zone
-            {
-                // Gradually move reference toward the detected note
-                int targetMidi = detectedMidi;
-                // Snap to nearest octave of the same note class to keep staff stable
-                int noteClass = _staffReferenceMidi % 12;
-                int detectedOctaveBase = (detectedMidi / 12) * 12;
-                int candidate1 = detectedOctaveBase + noteClass;
-                int candidate2 = candidate1 + 12;
-                int candidate3 = candidate1 - 12;
-
-                // Pick closest candidate to detected note
-                int best = candidate1;
-                int bestDist = Math.Abs(detectedMidi - candidate1);
-                if (Math.Abs(detectedMidi - candidate2) < bestDist) best = candidate2;
-                if (Math.Abs(detectedMidi - candidate3) < bestDist) best = candidate3;
-
-                _staffReferenceMidi = best;
             }
         }
 
@@ -719,7 +662,7 @@ namespace MusicNotes.Audio
             float staffWidth = width * 0.75f;
             float lineSpacing = Math.Max(2f * scale, height * 0.035f);
             // Show notes if we have a detected note (even if signal isn't perfect)
-            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, _displayStaffReferenceMidi);
+            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
 
             // Draw Info
             if (_displayHasSignal)
@@ -787,11 +730,12 @@ namespace MusicNotes.Audio
             int refStep = refOctave * 7 + diatonicOffsets[refNoteInOctave];
             int stepsFromCenter = absStep - refStep;
 
-            float noteY = cy - (stepsFromCenter * (lineSpacing / 2));
+            // Ignore octave — only pitch class determines staff position.
+            // Wrap by 7 (one diatonic octave) until within the 5-line staff bounds.
+            while (stepsFromCenter < -4) stepsFromCenter += 7;
+            while (stepsFromCenter >  4) stepsFromCenter -= 7;
 
-            // Clamp noteY to reasonable bounds (within 3x staff height from center)
-            float maxOffsetFromStaff = lineSpacing * 12; // About 6 octaves range
-            noteY = Math.Clamp(noteY, cy - maxOffsetFromStaff, cy + maxOffsetFromStaff);
+            float noteY = cy - (stepsFromCenter * (lineSpacing / 2));
 
             // Ledger Lines (only draw if within reasonable range)
             _paintGauge.Color = SKColors.White;
@@ -824,20 +768,23 @@ namespace MusicNotes.Audio
                 canvas.DrawLine(cx + 13 * scale, noteY, cx + 13 * scale, noteY - stemHeight, _paintGauge);
 
             // Sharp symbol
-            /*
+            
             bool isSharp = noteInOctave == 1 || noteInOctave == 3 || noteInOctave == 6 || noteInOctave == 8 || noteInOctave == 10;
             if (isSharp)
             {
-                _paintTextSmall.Color = _displayColor;
-                _paintTextSmall.TextAlign = SKTextAlign.Right;
-                _paintTextSmall.FakeBoldText = true;
+                if (_paintTextSmall == null)
+                {
+                    _paintTextSmall = new();
+                    _paintTextSmall.TextAlign = SKTextAlign.Right;
+                    _paintTextSmall.FakeBoldText = true;
+                }
+
+                _paintTextSmall.TextSize = 30 * scale;
+                _paintTextSmall.Color = _displayColor.ToSKColor();
 
                 canvas.DrawText("#", cx - 22 * scale, noteY + 10 * scale, _paintTextSmall);
-                _paintTextSmall.FakeBoldText = false;
-                _paintTextSmall.TextAlign = SKTextAlign.Center;
-                _paintTextSmall.Color = SKColors.White.WithAlpha(180); // Restore
             }
-            */
+            
         }
 
     }

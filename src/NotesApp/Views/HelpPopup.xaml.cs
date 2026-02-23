@@ -68,4 +68,20 @@ public partial class HelpPopup : AnimatedPopup
         _entrance?.Dispose();
         _entrance = null;
     }
+
+    private void HelpContent_OnLinkTapped(object sender, string url)
+    {
+        _ = Launcher.Default.TryOpenAsync(url);
+    }
+
+    private void TappedDrawnUi(object sender, ControlTappedEventArgs e)
+    {
+        _ = Launcher.Default.TryOpenAsync("https://drawnui.net");
+    }
+
+
+    private void TappedMaui(object sender, ControlTappedEventArgs e)
+    {
+         _ = Launcher.Default.TryOpenAsync("https://dotnet.microsoft.com/en-us/apps/maui");
+    }
 }
