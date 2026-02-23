@@ -26,7 +26,7 @@ public partial class AudioPageSettings : SkiaLayer
         {
             _entrance = new AnimatedShaderEffect()
             {
-                UseBackground = PostRendererEffectUseBackgroud.Once,
+                UseBackground = PostRendererEffectUseBackgroud.Always,
                 ShaderSource = @"Shaders\appear_orb.sksl",
                 DurationMs = 200
             };

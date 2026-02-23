@@ -1,5 +1,4 @@
-// Celebration: Tumbling Confetti - Optimized
-// Rectangular paper pieces rain down and tumble gently
+// Fast Continuous Confetti – dense rain feel, proper rendering scale, mobile Android friendly
 // Additive blend expected (SKBlendMode.Plus)
 
 uniform float4 iMouse;
@@ -10,82 +9,74 @@ uniform float2 iOffset;
 uniform float  progress;
 uniform float2 iCenter;
 
-const float PI = 3.14159265359;
-const float NUM = 16.0;           // ← tune: 12–20, 16 often best balance
+const float NUM = 24.0;
 
 float hash1(float n) {
-    return fract(sin(n) * 43758.5453123);
+    return fract(sin(n) * 43758.5453);
 }
 
 half3 festiveColor(float t) {
-    float h = fract(t);
-    if (h < 0.167) return half3(1.00, 0.20, 0.20);
-    if (h < 0.333) return half3(1.00, 0.82, 0.00);
-    if (h < 0.500) return half3(0.15, 0.85, 0.30);
-    if (h < 0.667) return half3(0.25, 0.55, 1.00);
-    if (h < 0.833) return half3(1.00, 0.35, 0.80);
-    return          half3(0.65, 0.20, 1.00);
+    float h = fract(t * 3.0 + 0.07);
+    if (h < 0.2) return half3(1.0, 0.18, 0.12);
+    if (h < 0.4) return half3(1.0, 0.92, 0.04);
+    if (h < 0.6) return half3(0.08, 0.96, 0.28);
+    if (h < 0.8) return half3(0.12, 0.62, 1.0);
+    return half3(0.98, 0.26, 0.94);
 }
 
 half4 main(float2 fragCoord) {
-    float2 inputCoord = fragCoord - iOffset;
-    float2 uv = inputCoord / iImageResolution;
-    float aspect = iImageResolution.x / iImageResolution.y;
+    float2 uv = (fragCoord - iOffset) / iImageResolution;
+    float2 renderScale = iImageResolution / iResolution;
 
-    // Global envelope: fast in, long hold, fade out
-    float envelope = smoothstep(0.0, 0.06, progress) *
-                     (1.0 - smoothstep(0.88, 1.0, progress));
+    float env = smoothstep(0.0, 0.07, progress) * (1.0 - smoothstep(0.80, 1.0, progress));
+    if (env < 0.002) return half4(0.0);
 
-    if (envelope < 0.005) {
-        return half4(0.0);  // tiny early-out help
-    }
-
-    half3 confetti = half3(0.0);
+    half3 col = half3(0.0);
 
     for (float i = 0.0; i < NUM; i += 1.0) {
-        float startX = hash1(i * 1.13 + 0.1);
-        float startY = -0.04 - hash1(i * 2.77 + 0.5) * 0.18;
+        float seed = i * 1.618 + 0.29;
 
-        float vx = (hash1(i * 3.31 + 1.0) - 0.5) * 0.55;
-        float vy = 0.55 + hash1(i * 4.19 + 2.0) * 0.80;
+        // Tight spawn for dense vertical layers
+        float offset = hash1(seed * 1.2) * 0.38;      // very close vertically
+        float tCycle = progress * 1.9 + offset;
+        float phase = fract(tCycle);
+        float t = phase * 2.6;                        // longer life → more overlap
 
-        float delay = hash1(i * 5.17 + 3.0) * 0.60;
-        float t = saturate((progress - delay) / (1.0 - delay));
+        if (t > 2.4) continue;
 
-        float px = startX + vx * t;
-        float py = startY + vy * t * t;
+        float px = 0.5 + (hash1(seed * 2.3) - 0.5) * 1.5
+                       + (hash1(seed * 3.4) - 0.5) * 0.5 * t;
 
-        // Piece size – slightly randomized rectangles
-        float pw = 0.022 + hash1(i * 9.41 + 6.0) * 0.016;     // half-width
-        float ph = pw * (0.30 + hash1(i * 11.7 + 7.0) * 0.20); // half-height
+        float py = -0.35 + 1.05 * t + 0.07 * t * t;
 
-        // Tumble: gentler spin
-        float angSpeed = (hash1(i * 7.11 + 4.0) - 0.5) * 6.0;  // ← reduced from 18!
-        float angle    = hash1(i * 8.23 + 5.0) * PI * 2.0 + angSpeed * t;
+        if (py < -0.2 || py > 1.4 || abs(px - 0.5) > 1.3) continue;
 
-        // Local space
+        // Size: logical → scaled conservatively (avoid giants on high DPI)
+        float logicalBase = 0.015 + hash1(seed * 4.5) * 0.022;
+        float base = logicalBase * renderScale.x * 0.60;  // ← tune 0.60 down to 0.45–0.50 if too big
+
+        float pw = base * (0.7 + hash1(seed * 5.6) * 1.4);
+        float ph = base * (0.4 + hash1(seed * 6.7) * 1.2);
+
         float2 d = uv - float2(px, py);
-        d.x *= aspect;
 
-        // Rotation – vec2 trick often fastest on mobile
-        vec2 sc = vec2(sin(angle), cos(angle));
-        float lx = d.x * sc.y + d.y * sc.x;
-        float ly = -d.x * sc.x + d.y * sc.y;
+        // Cheap fake wobble (fract + abs triangle wave)
+        float warp = fract(t * 5.5 + seed * 13.7) * 2.0 - 1.0;
+        warp = 1.0 - abs(warp);
+        float effPw = pw * (1.0 + warp * 0.7);
+        float effPh = ph * (1.0 + (1.0 - warp) * 1.3);
 
-        // Cheap soft rect (no smoothstep = big win)
-        float rx = saturate(1.0 - abs(lx) / pw * 1.35);
-        float ry = saturate(1.0 - abs(ly) / ph * 1.35);
-        float piece = rx * ry;  // or min(rx, ry) for rounder corners feel
+        float shape = saturate(1.0 - abs(d.x)/effPw * 1.7) *
+                      saturate(1.0 - abs(d.y)/effPh * 1.7);
+        shape *= shape * 1.1;  // soft + slight pop
 
-        // Optional cheap gloss without trig: edge brightening
-        float gloss = 0.85 + 0.3 * (1.0 - max(abs(lx)/pw, abs(ly)/ph));
+        float fade = smoothstep(0.0, 0.10, t) * (1.0 - smoothstep(1.8, 2.4, t));
+        float alpha = shape * fade * env * 1.40;
 
-        half3 color = festiveColor(hash1(i * 6.37 + 7.0));
-        confetti += color * piece * gloss;
+        col += festiveColor(seed) * alpha;
     }
 
-    confetti *= envelope;
-    confetti = saturate(confetti);  // safer than clamp for additive
+    col = min(col * 1.45, 2.8);
 
-    return half4(confetti, 0.0);
+    return half4(col, 0.0);
 }

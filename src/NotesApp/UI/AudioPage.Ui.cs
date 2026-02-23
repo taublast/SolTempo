@@ -6,8 +6,8 @@ using MusicNotes.Effects;
 using MusicNotes.Helpers;
 using ShadersCamera.Views;
 
-namespace MusicNotes.UI
-{
+namespace MusicNotes.UI;
+
     public partial class AudioPage
     {
         private SkiaImage _backgroundImage;
@@ -37,7 +37,7 @@ namespace MusicNotes.UI
         private SkiaControl _musicBPMDetectorWrapper;
         private AudioVisualizer _equalizer;
         private AudioPageSettings _settingsPopup;
-        private SkiaLayout _mainStack;
+        private LayerWIthEffects _mainStack;
 
         private void CreateContent()
         {
@@ -49,10 +49,9 @@ namespace MusicNotes.UI
 
             //if (mainStack == null)
             {
-                _mainStack = new SkiaLayout
+                _mainStack = new LayerWIthEffects
                 {
                     BackgroundColor = Colors.Black,
-                    HorizontalOptions = LayoutOptions.Fill,
                     VerticalOptions = LayoutOptions.Fill,
                     Children =
                     {
@@ -406,7 +405,8 @@ namespace MusicNotes.UI
                                         }
                                         .OnTapped(me =>
                                         {
-                                            TriggerCelebration();
+                                            _mainStack.ToggleConfetti();
+                                            //TriggerCelebration();
                                         }),
 
                                         /*
@@ -541,13 +541,15 @@ namespace MusicNotes.UI
 
             var fx = new CelebrationEffect
             {
-                UseContext = false,
+                UseContext = true,
+                UseBackground = PostRendererEffectUseBackgroud.Never,
+                BlendMode = SKBlendMode.Plus,
                 //ShaderSource = @"Shaders\celebrate_starburst.sksl",
                 //DurationMs = 2500,
-                ShaderSource = @"Shaders\celebrate_waves.sksl",
+                //ShaderSource = @"Shaders\celebrate_waves.sksl",
                 Center = new SKPoint(0.5f, 0.33f),
-                DurationMs = 2000,
-                //ShaderSource = @"Shaders\celebrate_confetti.sksl",
+                DurationMs = 5000,
+                ShaderSource = @"Shaders\celebrate_confetti.sksl",
                 //DurationMs = 3500,
                 //ShaderSource = @"Shaders\celebrate_confetti_burst.sksl",
                 //DurationMs = 3500,
@@ -647,5 +649,4 @@ namespace MusicNotes.UI
             }
         }
 
-    }
 }
