@@ -76,13 +76,15 @@ public partial class SettingsPopup : AnimatedPopup
         switch (value)
         {
         case 0:
-        return "Letter notation";
+        return "Letters";
         case 1:
-        return "Fixed-do";
+        return "European";
         case 2:
-        return "Movable-do";
+        return "American";
         case 3:
-        return "Cyrillic solfeggio";
+        return "Cyrillic";
+        case 4:
+        return "Numbers";
         default:
         return "Default";
         }
@@ -199,8 +201,8 @@ public partial class SettingsPopup : AnimatedPopup
 
                 {
                     // Prefix the list with "System Default" option
-                    var options = new string[4];
-                    for (int i = 0; i < 4; i++)
+                    var options = new string[5];
+                    for (int i = 0; i < 5; i++)
                     {
                         options[i] = GetNotationText(i);
                     }
@@ -225,6 +227,8 @@ public partial class SettingsPopup : AnimatedPopup
                         }
 
                         LabelNotation.Text = result;
+                        
+                        Notes.Reset();
                     }
                 }
             }

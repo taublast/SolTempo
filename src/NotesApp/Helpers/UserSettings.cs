@@ -10,13 +10,15 @@ namespace MusicNotes.Helpers
             Lang = "en";
             Module = 0;
             Device = 0;
-            Gain = false;
+            Gain = true;
+            NotesUseSemiNotes = true;
+            NotesNotation = 2;
         }
 
         public string Lang { get; set; }
         public int Module { get; set; }
         public int Device { get; set; }
-        public bool Gain { get; set; }
+        public bool Gain { get; set; } 
         public Dictionary<string, int> Formats { get; set; }
 
 

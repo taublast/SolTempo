@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AppoMobi.Maui.Gestures;
 using DrawnUi.Camera;
 using MusicNotes.UI;
 using SkiaSharp.Views.Maui;
@@ -57,6 +58,16 @@ namespace MusicNotes.Audio
             };
 
 
+        }
+
+        public override ISkiaGestureListener ProcessGestures(SkiaGesturesParameters args, GestureEventProcessingInfo apply)
+        {
+            if (args.Type == TouchActionResult.Tapped)
+            {
+                this.Reset();
+                return this;
+            }
+            return base.ProcessGestures(args, apply);
         }
 
         protected override void Paint(DrawingContext ctx)
@@ -232,7 +243,7 @@ namespace MusicNotes.Audio
         /// <summary>
         /// Fixed-do
         /// </summary>
-        private static readonly string[] SolfegeNames = { "Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "So", "So#", "La", "La#", "Si" };
+        private static readonly string[] SolfegeNames = { "Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si" };
 
         /// <summary>
         /// Movable-do
@@ -243,6 +254,11 @@ namespace MusicNotes.Audio
         /// Cyrillic solfeggio
         /// </summary>
         private static readonly string[] SolfegeCyr = { "До", "До#", "Ре", "Ре#", "Ми", "Фа", "Фа#", "Со", "Со#", "Ля", "Ля#", "Си" };
+
+        /// <summary>
+        /// Numbers
+        /// </summary>
+        private static readonly string[] SolfegeNums = { "1", "1#", "2", "2#", "3", "4", "4#", "5", "5#", "6", "6#", "7"  };
 
         public bool UseGain { get; set; } = true;
         public int Skin { get; set; } = 0;
@@ -599,6 +615,10 @@ namespace MusicNotes.Audio
 
                     case 3:
                     _currentNoteSolf = SolfegeCyr[noteIndex];
+                    break;
+
+                    case 4:
+                    _currentNoteSolf = SolfegeNums[noteIndex];
                     break;
 
                     default:
