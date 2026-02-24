@@ -83,7 +83,40 @@ public partial class AudioPage
 
     public AudioPage()
     {
-        Title = "Pitch & Tempo";
+        Title = ResStrings.AppTitle;
+
+        ToolbarItems.Add(new ToolbarItem
+        {
+            Text = "Share App",
+            Order = ToolbarItemOrder.Secondary,
+            Priority = 0,
+            Command = new Command(OnShareMenuTapped)
+        });
+
+        ToolbarItems.Add(new ToolbarItem
+        {
+            Text = "Privacy Policy",
+            Order = ToolbarItemOrder.Secondary,
+            Priority = 1,
+            Command = new Command(OnPrivacyMenuTapped)
+        });
+    }
+
+    private async void OnShareMenuTapped()
+    {
+        await Share.RequestAsync(new ShareTextRequest
+        {
+            Title = ResStrings.AppTitle,
+            Text = "Check out SolTempo – music notes & BPM detector!\nhttps://github.com/taublast/AudioNotes"
+        });
+    }
+
+    private async void OnPrivacyMenuTapped()
+    {
+        await DisplayAlert(
+            "Privacy Policy",
+            "SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device.",
+            ResStrings.BtnOk);
     }
 
     private void CreateContent()

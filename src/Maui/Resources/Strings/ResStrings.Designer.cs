@@ -70,7 +70,7 @@ namespace SolTempo.Resources.Strings {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Pitch &amp; Tempo.
+        ///   Looks up a localized string similar to SolTempo.
         /// </summary>
         public static string AppTitle {
             get {

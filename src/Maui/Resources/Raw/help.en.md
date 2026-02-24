@@ -1,4 +1,4 @@
-# Pitch & Tempo  Mobile App
+# SolTempo  Mobile App
 
 ## What It Does
 

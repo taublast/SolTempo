@@ -5,6 +5,7 @@ using DrawnUi.Controls;
 using DrawnUi.Views;
 using SolTempo.Audio;
 using SolTempo.Helpers;
+using SolTempo.Resources.Strings;
 
 namespace SolTempo.UI;
 
@@ -37,14 +38,13 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         if (subscribe)
         {
             Recorder.StateChanged += RecorderOnStateChanged;
-            Recorder.OnError += OnCameraError;
+            Recorder.OnError += OnHardwareError;
             Recorder.RecordingSuccess += OnRecordingSuccess;
             Recorder.RecordingProgress += OnRecordingProgress;
 
             Recorder.OnAudioSample += OnAudioSample;
 
             UserSettings.ApplyToHardware(Recorder);
-
             UserSettings.ApplyToNotes(NotesModule);
         }
         else
@@ -52,7 +52,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
             if (Recorder != null)
             {
                 Recorder.StateChanged -= RecorderOnStateChanged;
-                Recorder.OnError -= OnCameraError;
+                Recorder.OnError -= OnHardwareError;
                 Recorder.RecordingSuccess -= OnRecordingSuccess;
                 Recorder.RecordingProgress -= OnRecordingProgress;
 
@@ -73,10 +73,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
             _equalizer.AddSample(sample);
         }
 
-          //_rhythmDetector?.AddSample(sample);
-          //_metronome?.AddSample(sample);
-
-          if (_musicBPMDetectorWrapper.IsVisible)
+          if (_musicBPMDetector.IsVisible)
           {
               _musicBPMDetector?.AddSample(sample);
         }
@@ -102,9 +99,9 @@ public partial class AudioPage : BasePageReloadable, IDisposable
 
   
 
-    private void OnCameraError(object sender, string e)
+    private void OnHardwareError(object sender, string e)
     {
-        ShowAlert("Camera Error", e);
+        ShowAlert("Hardware Error", e);
     }
 
     private async void OnRecordingSuccess(object sender, CapturedVideo capturedVideo)

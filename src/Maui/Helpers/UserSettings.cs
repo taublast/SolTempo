@@ -12,7 +12,7 @@ namespace SolTempo.Helpers
             Device = 0;
             Gain = false;
             NotesUseSemiNotes = true;
-            NotesNotation = 2;
+            NotesNotation = 1; //eu
         }
 
         public string Lang { get; set; }

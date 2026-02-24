@@ -7,14 +7,10 @@
     Title="DrawnUI for .NET MAUI"
     Shell.FlyoutBehavior="Disabled">
 
-
-
     <!--  Camera  -->
     <ShellContent
         Title="SkiaCamera Test"
         ContentTemplate="{DataTemplate ui:AudioPage}"
         Route="MainPage" />
-
-
 
 </Shell>

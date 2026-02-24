@@ -7,8 +7,7 @@ namespace SolTempo.Audio
     {
         public AudioRecorder()
         {
-
-            NeedPermissionsSet = NeedPermissions.Gallery | NeedPermissions.Microphone;
+            NeedPermissionsSet = NeedPermissions.Microphone;
 
             this.EnableAudioRecording = true;
 
