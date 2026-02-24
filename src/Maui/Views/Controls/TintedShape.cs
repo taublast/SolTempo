@@ -1,3 +1,4 @@
+using AppoMobi.Maui.Gestures;
 using SolTempo;
 
 namespace SolTempo.UI;
@@ -7,6 +8,26 @@ public class TintedShape : SkiaShape
     public TintedShape()
     {
         MapProperties();
+    }
+
+    bool _isTapped = false;
+
+    public override ISkiaGestureListener ProcessGestures(SkiaGesturesParameters args, GestureEventProcessingInfo apply)
+    {
+        if (args.Type == TouchActionResult.Down && !_isTapped)
+        {
+            _isTapped = true;
+            var color = this.TintColor;
+            TintColor = TintColor.Darken(0.33f);
+            Task.Run(async () =>
+            {
+                await Task.Delay(250);
+                TintColor = color;
+                _isTapped = false;
+            });
+        }
+
+        return base.ProcessGestures(args, apply);
     }
 
     public static readonly BindableProperty TintColorProperty = BindableProperty.Create(
