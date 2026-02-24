@@ -107,7 +107,7 @@ public partial class AudioPage
         await Share.RequestAsync(new ShareTextRequest
         {
             Title = ResStrings.AppTitle,
-            Text = "Check out SolTempo – music notes & BPM detector!\nhttps://github.com/taublast/AudioNotes"
+            Text = "Check out SolTempo – music notes & BPM detector!\nhttps://github.com/taublast/SolTempo"
         });
     }
 

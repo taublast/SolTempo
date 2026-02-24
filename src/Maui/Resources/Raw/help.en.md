@@ -68,7 +68,7 @@ Apply automatic gain to boost quiet input signals before analysis.
 
 ## Credits
 
-This is a MIT-licenced open-source crossplatform project, find full source code on [GitHub](https://github.com/taublast/AudioNotes).
+This is a MIT-licenced open-source crossplatform project, find full source code on [GitHub](https://github.com/taublast/SolTempo).
 
 Crafted with [DrawnUI](https://drawnui.com) for .NET MAUI by [Nick Kovalsky](http://taublast.github.io).
 
