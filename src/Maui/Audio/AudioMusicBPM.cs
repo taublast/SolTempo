@@ -97,7 +97,6 @@ namespace SolTempo.Audio
                     TextColor = Colors.LimeGreen,
                     HorizontalOptions = LayoutOptions.Center,
                     UseCache = SkiaCacheType.Operations,
-                    IsVisible = false,
                 }.Assign(out _labelConfidence),
 
                 new SkiaLabel
@@ -183,6 +182,7 @@ namespace SolTempo.Audio
             }
 
             // Raw waveform at bottom
+            lock (_sampleBuffer)
             {
                 float waveHeight = 40 * scale;
                 float waveY = top + height - 70 * scale;
@@ -227,35 +227,38 @@ namespace SolTempo.Audio
 
         public void Reset()
         {
-            Array.Clear(_sampleBuffer, 0, _sampleBuffer.Length);
-            _writePos = 0;
-            _samplesAddedSinceLastScan = 0;
-            _sampleRate = 44100;
+            lock (_sampleBuffer)
+            {
+                Array.Clear(_sampleBuffer, 0, _sampleBuffer.Length);
+                _writePos = 0;
+                _samplesAddedSinceLastScan = 0;
+                _sampleRate = 44100;
 
-            _energyHistory.Clear();
-            _bpmHistory.Clear();
-            _currentBPM = 0;
-            _lockedBPM = 0;
-            _confidence = 0;
-            _hasSignal = false;
+                _energyHistory.Clear();
+                _bpmHistory.Clear();
+                _currentBPM = 0;
+                _lockedBPM = 0;
+                _confidence = 0;
+                _hasSignal = false;
 
-            _clockMs = 0;
-            _noiseFloor = 0.005f;
-            _lowPassState = 0;
-            _prevVal = 0;
-            _framesSinceLastDetect = 0;
+                _clockMs = 0;
+                _noiseFloor = 0.005f;
+                _lowPassState = 0;
+                _prevVal = 0;
+                _framesSinceLastDetect = 0;
 
-            _displayBPM = 0;
-            _displayConfidence = 0;
-            _displayEnergyWave.Clear();
-            _swapRequested = 0;
+                _displayBPM = 0;
+                _displayConfidence = 0;
+                _displayEnergyWave.Clear();
+                _swapRequested = 0;
 
-            _labelBpm.IsVisible = false;
-            _labelBpmUnit.IsVisible = false;
-            _labelConfidence.IsVisible = false;
-            _labelNoSignal.IsVisible = true;
+                _labelBpm.IsVisible = false;
+                _labelBpmUnit.IsVisible = false;
+                _labelConfidence.IsVisible = false;
+                _labelNoSignal.IsVisible = true;
 
-            Update();
+                Update();
+            }
         }
 
         private long AdvanceClock(int frames)
@@ -294,37 +297,40 @@ namespace SolTempo.Audio
 
         public void AddSample(AudioSample sample)
         {
-            if (sample.SampleRate > 0)
-                _sampleRate = sample.SampleRate;
-
-            int frames = sample.SampleCount;
-            _ = AdvanceClock(frames);
-
-            float gainMultiplier = UseGain ? 4.0f : 1.0f;
-
-            for (int frame = 0; frame < frames; frame++)
+            lock (_sampleBuffer)
             {
-                float val = ReadMonoSample(sample, frame) * gainMultiplier;
-                val = Math.Clamp(val, -1.0f, 1.0f);
+                if (sample.SampleRate > 0)
+                    _sampleRate = sample.SampleRate;
 
-                _sampleBuffer[_writePos] = val;
-                _writePos = (_writePos + 1) % BufferSize;
+                int frames = sample.SampleCount;
+                _ = AdvanceClock(frames);
 
-                _samplesAddedSinceLastScan++;
+                float gainMultiplier = UseGain ? 4.0f : 1.0f;
 
-                if (_samplesAddedSinceLastScan >= ScanInterval)
+                for (int frame = 0; frame < frames; frame++)
                 {
-                    ComputeEnergyFrame();
+                    float val = ReadMonoSample(sample, frame) * gainMultiplier;
+                    val = Math.Clamp(val, -1.0f, 1.0f);
 
-                    if (_framesSinceLastDetect++ >= 4)
+                    _sampleBuffer[_writePos] = val;
+                    _writePos = (_writePos + 1) % BufferSize;
+
+                    _samplesAddedSinceLastScan++;
+
+                    if (_samplesAddedSinceLastScan >= ScanInterval)
                     {
-                        DetectMusicBPM();
-                        _framesSinceLastDetect = 0;
-                        UpdateDisplayLabels();
-                        Update();
-                    }
+                        ComputeEnergyFrame();
 
-                    _samplesAddedSinceLastScan = 0;
+                        if (_framesSinceLastDetect++ >= 4)
+                        {
+                            DetectMusicBPM();
+                            _framesSinceLastDetect = 0;
+                            UpdateDisplayLabels();
+                            Update();
+                        }
+
+                        _samplesAddedSinceLastScan = 0;
+                    }
                 }
             }
         }
@@ -333,11 +339,17 @@ namespace SolTempo.Audio
         {
             if (_displayBPM > 0)
             {
+  
                 _labelNoSignal.IsVisible = false;
                 _labelBpm.IsVisible = true;
                 _labelBpmUnit.IsVisible = true;
-                _labelBpm.Text = $"{_displayBPM:F0}";
-                _labelBpm.TextColor = _hasSignal ? Colors.White : Colors.Gray;
+
+                if (_displayConfidence > 99)
+                {
+                    _labelBpm.Text = $"{_displayBPM:F0}";
+                }
+
+                _labelBpm.TextColor = _displayConfidence > 99 && _hasSignal ? Colors.White : Colors.Gray;
 
                 if (_displayConfidence > 20)
                 {
@@ -345,11 +357,11 @@ namespace SolTempo.Audio
                                            _displayConfidence > 40 ? Colors.Yellow : Colors.Orange;
                     _labelConfidence.TextColor = confidenceColor;
                     _labelConfidence.Text = $"Confidence: {_displayConfidence:F0}%";
-                    _labelConfidence.IsVisible = true;
                 }
                 else
                 {
-                    _labelConfidence.IsVisible = false;
+                    _labelConfidence.TextColor = Colors.Orange;
+                    _labelConfidence.Text = $"Thinking..";
                 }
             }
             else
@@ -357,7 +369,9 @@ namespace SolTempo.Audio
                 _labelNoSignal.IsVisible = true;
                 _labelBpm.IsVisible = false;
                 _labelBpmUnit.IsVisible = false;
-                _labelConfidence.IsVisible = false;
+
+                _labelConfidence.TextColor = Colors.Orange;
+                _labelConfidence.Text = $"Listening..";
             }
         }
 
