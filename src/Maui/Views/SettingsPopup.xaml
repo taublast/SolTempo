@@ -108,36 +108,6 @@
 
                             </draw:SkiaLayout>
 
-                            <!--  MODE VOICE  -->
-                            <draw:SkiaLayout
-                                Padding="1,0"
-                                HorizontalOptions="Fill"
-                                MinimumHeightRequest="32"
-                                Tapped="SelectNotesMode"
-                                UseCache="Operations">
-
-                                <draw:SkiaRichLabel
-                                    FontFamily="FontTextTitle"
-                                    FontSize="16"
-                                    Text="Detection"
-                                    TextColor="White"
-                                    UseCache="Operations"
-                                    VerticalOptions="Center" />
-
-                                <draw:SkiaRichLabel
-                                    x:Name="LabelNotesMode"
-                                    CharacterSpacing="1.4"
-                                    FontAttributes="Bold"
-                                    FontSize="18"
-                                    HorizontalOptions="End"
-                                    MaxLines="1"
-                                    MaximumWidthRequest="150"
-                                    TextColor="Goldenrod"
-                                    VerticalOptions="Fill"
-                                    VerticalTextAlignment="Center" />
-
-                            </draw:SkiaLayout>
-
                             <!--  SEMI SWITCH  -->
                             <draw:SkiaLayout
                                 Padding="1,0"

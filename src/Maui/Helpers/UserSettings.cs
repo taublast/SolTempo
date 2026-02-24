@@ -23,7 +23,6 @@ namespace SolTempo.Helpers
 
 
         public int NotesNotation { get; set; }
-        public int NotesMode { get; set; }
         public bool NotesUseSemiNotes { get; set; }
 
 
@@ -33,14 +32,12 @@ namespace SolTempo.Helpers
         {
             UserSettings.Current.NotesUseSemiNotes = module.UseSemiNotes;
             UserSettings.Current.NotesNotation = module.Notation;
-            UserSettings.Current.NotesMode = module.VoiceMode ? 0 : 1;
         }
 
         public static void ApplyToNotes(AudioInstrumentTuner module)
         {
             module.UseSemiNotes = UserSettings.Current.NotesUseSemiNotes;
             module.Notation = UserSettings.Current.NotesNotation;
-            module.VoiceMode = UserSettings.Current.NotesMode == 0;
         }
 
         public static void FillFromHardware(AudioRecorder hardware)

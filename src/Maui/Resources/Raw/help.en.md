@@ -2,7 +2,7 @@
 
 ## What It Does
 
-Music Notes listens to your instrument or voice in real time and identifies the musical note you are playing or singing.
+App listens to your instrument or voice in real time and identifies the musical note you are playing or singing.
 
 On top of that another module can detect the tempo of the music being played, showing the beats per minute (BPM).
 
@@ -33,13 +33,6 @@ Switch **Notation** to choose how notes are labelled:
 - **American** — Sol La Ti
 - **Cyrillic** — До Ре Ми..
 - **Numbers** — 1 2 3..
-
-### Detection
-
-Choose between two frequency ranges for pitch detection:
-
-- **Instruments 60–1600 Hz** — suited for most melodic instruments
-- **Voice 80–1100 Hz** — optimised for singing
 
 ### Sharp notes
 

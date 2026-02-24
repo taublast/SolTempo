@@ -306,7 +306,7 @@ namespace SolTempo.Audio
         /// Voice mode: 80–1100 Hz (bass voice to soprano high C).
         /// Instrument mode: 60–1600 Hz (bass guitar to violin/flute upper range).
         /// </summary>
-        public bool VoiceMode { get; set; } = true;
+        public bool VoiceMode { get; set; } = false;
 
         /// <summary>
         /// Audio ring buffer duration in milliseconds. Larger = more stable at low frequencies;

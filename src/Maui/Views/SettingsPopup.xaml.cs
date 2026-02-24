@@ -9,7 +9,7 @@ public partial class SettingsPopup : AnimatedPopup
 {
     private readonly AudioPage _parentPage;
 
-    private bool isInitializing;
+    private bool isInitializing; //to lock ui switches at startup
 
     public override void Show()
     {
@@ -41,9 +41,6 @@ public partial class SettingsPopup : AnimatedPopup
 
         _ = UpdateControls();
     }
-
-
-
 
     public override void OnWillDisposeWithChildren()
     {
@@ -99,10 +96,8 @@ public partial class SettingsPopup : AnimatedPopup
 
         //selectors
         LabelSource.Text = await GetAudioSourceText(Recorder);
-
         SwitchSemi.IsToggled = Notes.UseSemiNotes;
         LabelNotation.Text = GetNotationText(Notes.Notation);
-        LabelNotesMode.Text = GetVoiceModeText(Notes.VoiceMode ? 0 : 1);
 
         isInitializing = false;
     }
@@ -238,63 +233,7 @@ public partial class SettingsPopup : AnimatedPopup
             }
         });
     }
-
-    string GetVoiceModeText(int value)
-    {
-        switch (value)
-        {
-            case 1:
-                return "Voice 80–1100 Hz";
-
-            default:
-            case 0:
-                return "Instruments 60–1600 Hz";
-        }
-    }
-
-    private void SelectNotesMode(object sender, ControlTappedEventArgs e)
-    {
-        MainThread.BeginInvokeOnMainThread(async () =>
-        {
-            try
-            {
-
-                {
-                    // Prefix the list with "System Default" option
-                    var options = new string[2];
-                    options[0] = GetVoiceModeText(0);
-                    options[1] = GetVoiceModeText(1);
-
-                    var result = await _parentPage.DisplayActionSheet("Select Detection Mode", "Cancel", null, options);
-
-                    if (!string.IsNullOrEmpty(result) && result != "Cancel")
-                    {
-                        int selectedIndex = -1;
-                        for (int i = 0; i < options.Length; i++)
-                        {
-                            if (options[i] == result)
-                            {
-                                selectedIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (selectedIndex >= 0)
-                        {
-                            Notes.VoiceMode = selectedIndex == 0;
-                        }
-
-                        LabelNotesMode.Text = result;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Super.Log(ex);
-            }
-        });
-    }
-
+ 
     private void TappedClose(object sender, ControlTappedEventArgs e)
     {
         Close();
