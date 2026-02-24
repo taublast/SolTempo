@@ -5,9 +5,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:ui="clr-namespace:SolTempo.UI"
     Title="DrawnUI for .NET MAUI"
-    Shell.FlyoutBehavior="Disabled">
+    TitleColor="#9da7b0"
+    BackgroundColor="#1b3148"
+    FlyoutBehavior="Disabled"
+    ForegroundColor="#697886">
 
-    <!--  Camera  -->
     <ShellContent
         Title="SkiaCamera Test"
         ContentTemplate="{DataTemplate ui:AudioPage}"
