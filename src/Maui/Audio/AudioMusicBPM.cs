@@ -103,7 +103,7 @@ namespace SolTempo.Audio
                 new SkiaLabel
                 {
                     Margin = new Thickness(16,40),
-                    Text = "Tap to reset listening to tempo",
+                    Text = "Tap to reset tempo",
                     FontSize = 22,
                     FontFamily = AppFonts.Default,
                     TextColor = Colors.LightGray,

@@ -28,13 +28,13 @@ namespace SolTempo.Helpers
 
         private static UserSettings _loaded;
 
-        public static void FillFromNotes(AudioInstrumentTuner module)
+        public static void FillFromNotes(AudioNotesDetector module)
         {
             UserSettings.Current.NotesUseSemiNotes = module.UseSemiNotes;
             UserSettings.Current.NotesNotation = module.Notation;
         }
 
-        public static void ApplyToNotes(AudioInstrumentTuner module)
+        public static void ApplyToNotes(AudioNotesDetector module)
         {
             module.UseSemiNotes = UserSettings.Current.NotesUseSemiNotes;
             module.Notation = UserSettings.Current.NotesNotation;

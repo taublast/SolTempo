@@ -21,8 +21,8 @@ public partial class HelpPopup : AnimatedPopup
     {
         try
         {
-            var lang = "en";// CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-            var content = await TryLoadFile($"help.{lang}.md");
+            var lang = "en"; // todo will localize
+            var content = await TryLoadFile($"Markdown/help.{lang}.md");
 
             if (content == null && lang != "en")
             {

@@ -32,7 +32,7 @@ public partial class AudioPage
     private SkiaLabel _modeButtonIcon;
     private bool _isLayoutLandscape;
     private SkiaShape _captureButtonOuter;
-    public AudioInstrumentTuner NotesModule;
+    public AudioNotesDetector NotesModule;
     private SkiaControl _musicNotesWrapper;
     private AudioMusicBPM _musicBPMDetector;
     private SkiaControl _musicBPMDetectorWrapper;
@@ -184,7 +184,7 @@ public partial class AudioPage
                                     }
                                 },
 
-                                new AudioInstrumentTuner()
+                                new AudioNotesDetector()
                                 {
                                     Margin = new (16,16,16,0),
                                     HorizontalOptions = LayoutOptions.Fill,

@@ -29,7 +29,7 @@ public partial class SettingsPopup : AnimatedPopup
 
     AudioRecorder Recorder => _parentPage?.Recorder;
 
-    AudioInstrumentTuner Notes => _parentPage?.NotesModule;
+    AudioNotesDetector Notes => _parentPage?.NotesModule;
 
     public SettingsPopup(AudioPage page)
     {
