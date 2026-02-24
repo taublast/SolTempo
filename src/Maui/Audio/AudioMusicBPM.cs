@@ -254,7 +254,6 @@ namespace SolTempo.Audio
 
                 _labelBpm.IsVisible = false;
                 _labelBpmUnit.IsVisible = false;
-                _labelConfidence.IsVisible = false;
                 _labelNoSignal.IsVisible = true;
 
                 Update();
@@ -377,20 +376,22 @@ namespace SolTempo.Audio
 
         private void ComputeEnergyFrame()
         {
-            float energyLow = 0;
-            float energyMidHigh = 0;
+            float energyLow = 0f;
+            float energyMidHigh = 0f;
 
             int windowSize = ScanInterval;
-            float alphaLow = 0.05f;
+            float alphaLow = 0.05f;  // 0.03–0.08 range is fine; lower = smoother bass energy
 
             for (int i = 0; i < windowSize; i++)
             {
                 int idx = (_writePos - windowSize + i + BufferSize) % BufferSize;
                 float val = _sampleBuffer[idx];
 
-                _lowPassState = _lowPassState + alphaLow * (val - _lowPassState);
+                // Low-frequency emphasis (bass/kick body)
+                _lowPassState += alphaLow * (val - _lowPassState);
                 energyLow += _lowPassState * _lowPassState;
 
+                // High-frequency content (snare/hi-hat/perc transients)
                 float diff = val - _prevVal;
                 _prevVal = val;
                 energyMidHigh += diff * diff;
@@ -399,17 +400,30 @@ namespace SolTempo.Audio
             energyLow = (float)Math.Sqrt(energyLow / windowSize);
             energyMidHigh = (float)Math.Sqrt(energyMidHigh / windowSize);
 
-            float energy = energyLow + energyMidHigh;
+            // Slight boost to percussive energy — helps mid-tempo grooves
+            float energy = energyLow + energyMidHigh * 1.2f;
 
+            // Noise floor tracking (slow adaptation)
             if (_noiseFloor < 0.0001f) _noiseFloor = 0.0001f;
             _noiseFloor = _noiseFloor * 0.999f + energy * 0.001f;
 
-            float silenceThreshold = Math.Max(UseGain ? 0.0005f : 0.0002f, _noiseFloor * 0.8f);
+            float silenceThreshold = Math.Max(UseGain ? 0.0006f : 0.00025f, _noiseFloor * 0.85f);
 
-            if (energy < silenceThreshold)
+            bool isSilence = energy < silenceThreshold;
+
+            if (isSilence)
             {
-                energy = 0;
-                if (_hasSignal) { _hasSignal = false; }
+                energy = 0f;
+                _hasSignal = false;
+
+                // Clear history after ~10–15 seconds of real silence to kill old wrong tempos
+                if (_energyHistory.Count > 40 && _energyHistory.TakeLast(30).All(e => e <= silenceThreshold * 1.4f))
+                {
+                    _bpmHistory.Clear();
+                    _currentBPM = 0f;
+                    _lockedBPM = 0f;
+                    _confidence = 0f;
+                }
             }
             else
             {
@@ -423,121 +437,142 @@ namespace SolTempo.Audio
 
         private void DetectMusicBPM()
         {
-            if (_energyHistory.Count < 130) return;
+            if (_energyHistory.Count < 160) return;           // increased from 130 — need more context
 
+            // ────────────────────────────────────────────────
+            // Onset strength calculation — improved noise rejection
+            // ────────────────────────────────────────────────
             List<float> onsets = new List<float>();
-            float maxOnset = 0;
+            float maxOnset = 0f;
 
-            int avgWindow = 6;
+            const int avgWindow = 7;  // slightly larger → more stable local average
 
             for (int i = avgWindow; i < _energyHistory.Count; i++)
             {
-                float sum = 0;
+                float sumPrev = 0f;
                 for (int w = 1; w <= avgWindow; w++)
-                    sum += _energyHistory[i - w];
-                float localAvg = sum / avgWindow;
+                    sumPrev += _energyHistory[i - w];
+
+                float localAvg = sumPrev / avgWindow;
 
                 float diff = _energyHistory[i] - localAvg;
-                if (diff < 0.002f) diff = 0;
 
-                float val = Math.Max(0, diff);
+                // Stricter gate — prevents noise from creating fake onsets
+                if (diff < 0.004f) diff = 0f;                   // was 0.002f — raise this
+
+                float val = Math.Max(0f, diff);
+
+                // Cheap logarithmic compression — crushes small noise, preserves strong onsets
+                val = (float)Math.Max(0f, Math.Log(1f + 35f * val) - 0.10f);
+
                 onsets.Add(val);
-
                 if (val > maxOnset) maxOnset = val;
             }
 
+            // ────────────────────────────────────────────────
+            // Sparse peak detection — stricter to avoid false fast tempos
+            // ────────────────────────────────────────────────
             int sparseLag = 0;
-            bool hasPeaks = (maxOnset > 0.01f);
+            bool hasPeaks = maxOnset > 0.012f;  // slightly higher than before
+
+            List<int> peakIndices = new List<int>();
 
             if (hasPeaks)
             {
-                List<int> peakIndices = new List<int>();
-
-                for (int i = 2; i < onsets.Count - 2; i++)
+                for (int i = 3; i < onsets.Count - 3; i++)  // wider neighborhood
                 {
-                    if (onsets[i] > (maxOnset * 0.35f)
-                        && onsets[i] >= onsets[i - 1] && onsets[i] >= onsets[i - 2]
-                        && onsets[i] > onsets[i + 1] && onsets[i] > onsets[i + 2])
+                    if (onsets[i] > maxOnset * 0.50f          // was 0.35 — much stricter
+                        && onsets[i] > 0.09f                  // absolute floor — kills noise peaks
+                        && onsets[i] >= onsets[i - 1]
+                        && onsets[i] >= onsets[i - 2]
+                        && onsets[i] >= onsets[i - 3]
+                        && onsets[i] > onsets[i + 1]
+                        && onsets[i] > onsets[i + 2]
+                        && onsets[i] > onsets[i + 3])
                     {
                         peakIndices.Add(i);
-                        i += 2;
+                        i += 4;  // skip more aggressively to avoid double-counting same event
                     }
                 }
 
-                if (peakIndices.Count >= 3)
+                if (peakIndices.Count >= 4)  // need more evidence
                 {
-                    List<int> intervals = new List<int>();
+                    var intervals = new List<int>();
                     for (int k = 0; k < peakIndices.Count - 1; k++)
                     {
                         int delta = peakIndices[k + 1] - peakIndices[k];
-                        if (delta > 8) intervals.Add(delta);
+                        if (delta > 6) intervals.Add(delta);  // was 8 — slightly lower
                     }
 
-                    var bestGroup = intervals
-                        .GroupBy(x => x)
-                        .OrderByDescending(g => g.Count())
-                        .FirstOrDefault();
-
-                    if (bestGroup != null && bestGroup.Count() >= 2)
+                    if (intervals.Count > 0)
                     {
-                        sparseLag = bestGroup.Key;
+                        var bestGroup = intervals
+                            .GroupBy(x => x)
+                            .OrderByDescending(g => g.Count())
+                            .FirstOrDefault();
+
+                        if (bestGroup?.Count() >= 2)
+                            sparseLag = bestGroup.Key;
                     }
                 }
             }
 
-            int minBPM = 40;
-            int maxBPM = 220;
+            // ────────────────────────────────────────────────
+            // Autocorrelation setup — realistic music range
+            // ────────────────────────────────────────────────
+            const int minBPM = 40;
+            const int maxBPM = 260;
+
             float timePerFrame = (float)ScanInterval / _sampleRate;
 
-            int minLag = (int)(60f / maxBPM / timePerFrame);
+            int minLag = Math.Max(10, (int)(60f / maxBPM / timePerFrame));   // hard floor ~ lag 10 ≈ 260 BPM
             int maxLag = (int)(60f / minBPM / timePerFrame);
-
             maxLag = Math.Min(_energyHistory.Count / 2, maxLag);
 
-            if (minLag >= maxLag)
-                return;
+            if (minLag >= maxLag) return;
 
-            float maxCorrelation = 0;
+            float maxCorrelation = 0f;
             int bestLag = 0;
-            Dictionary<int, float> lagCorrelations = new Dictionary<int, float>();
+            var lagCorrelations = new Dictionary<int, float>();
 
             for (int lag = minLag; lag <= maxLag; lag++)
             {
-                float correlation = 0;
-                float normA = 0;
-                float normB = 0;
+                float correlation = 0f, normA = 0f, normB = 0f;
                 int count = 0;
 
                 for (int i = 0; i < onsets.Count - lag; i++)
                 {
-                    float valA = onsets[i];
-                    float valB = onsets[i + lag];
-
-                    correlation += valA * valB;
-                    normA += valA * valA;
-                    normB += valB * valB;
+                    float a = onsets[i];
+                    float b = onsets[i + lag];
+                    correlation += a * b;
+                    normA += a * a;
+                    normB += b * b;
                     count++;
                 }
 
                 if (count > 0 && normA > 0 && normB > 0)
-                {
-                    correlation = correlation / (float)Math.Sqrt(normA * normB);
-                }
+                    correlation /= (float)Math.Sqrt(normA * normB);
+                else
+                    correlation = 0f;
 
-                float lagTime = lag * timePerFrame;
-                float candidateBPM = 60f / lagTime;
+                float candidateBPM = 60f / (lag * timePerFrame);
 
+                // Sparse lag bonus — but limited so it can't override strong real peaks
                 if (sparseLag > 0)
                 {
-                    if (Math.Abs(lag - sparseLag) <= 1) correlation += 0.4f;
-                    if (Math.Abs(lag - (sparseLag / 2)) <= 1) correlation += 0.3f;
-                    if (Math.Abs(lag - (sparseLag * 2)) <= 1) correlation += 0.2f;
+                    if (Math.Abs(lag - sparseLag) <= 1) correlation += 0.25f * (1f - correlation);
+                    if (Math.Abs(lag - (sparseLag / 2)) <= 1) correlation += 0.18f * (1f - correlation);
+                    if (Math.Abs(lag - (sparseLag * 2)) <= 1) correlation += 0.12f * (1f - correlation);
                 }
 
-                float logBPM = (float)Math.Log(candidateBPM / 120f);
-                float tempoWeight = (float)Math.Exp(-0.5f * Math.Pow(logBPM / 1.4f, 2));
+                // Stronger prior toward 90–160 BPM range
+                float logBPM = (float)Math.Log(candidateBPM / 115f);
+                float tempoWeight = (float)Math.Exp(-0.5f * Math.Pow(logBPM / 0.9f, 2));  // tighter Gaussian
 
-                if (correlation > 0.6f) tempoWeight = 1.0f; else correlation *= tempoWeight;
+                if (candidateBPM > 220f) tempoWeight *= 0.45f;           // penalize very fast tempos
+                if (candidateBPM < 60f) tempoWeight *= 0.60f;
+
+                correlation *= tempoWeight;
 
                 lagCorrelations[lag] = correlation;
 
@@ -548,104 +583,111 @@ namespace SolTempo.Audio
                 }
             }
 
-            if (bestLag > minLag * 1.5f)
+            // Prefer half-time if it has decent correlation
+            if (bestLag > minLag * 1.4f)
             {
-                int lag2x = bestLag / 2;
+                int lagHalf = bestLag / 2;
+                float peakHalf = 0f;
+                int bestHalf = 0;
 
-                float peak2x = 0;
-                int bestLag2x = 0;
-
-                for (int l = lag2x - 2; l <= lag2x + 2; l++)
+                for (int l = lagHalf - 3; l <= lagHalf + 3; l++)
                 {
-                    if (lagCorrelations.TryGetValue(l, out float val) && val > peak2x)
+                    if (lagCorrelations.TryGetValue(l, out float val) && val > peakHalf)
                     {
-                        peak2x = val;
-                        bestLag2x = l;
+                        peakHalf = val;
+                        bestHalf = l;
                     }
                 }
 
-                if (peak2x > (maxCorrelation * 0.40f))
+                if (peakHalf > maxCorrelation * 0.45f)
                 {
-                    bestLag = bestLag2x;
-                    maxCorrelation = peak2x;
+                    bestLag = bestHalf;
+                    maxCorrelation = peakHalf;
                 }
             }
 
-            if (bestLag > 0 && maxCorrelation > 0.15f)
+            // ────────────────────────────────────────────────
+            // Rejection gates — this is what kills 220+ ghosts
+            // ────────────────────────────────────────────────
+            if (maxCorrelation < 0.32f || peakIndices.Count < 5)
+                return;  // was 0.28 — slightly higher + require more peaks
+
+            if (bestLag < 12 && maxCorrelation < 0.48f)  // very fast + not super confident → ignore
+                return;
+
+            // ────────────────────────────────────────────────
+            // Fractional lag + BPM calculation
+            // ────────────────────────────────────────────────
+            float fractionalLag = bestLag;
+
+            if (bestLag > minLag && bestLag < maxLag)
             {
-                float fractionalLag = bestLag;
-                if (bestLag > minLag && bestLag < maxLag)
+                if (lagCorrelations.TryGetValue(bestLag - 1, out float yLeft) &&
+                    lagCorrelations.TryGetValue(bestLag + 1, out float yRight))
                 {
-                    if (lagCorrelations.TryGetValue(bestLag - 1, out float yLeft) &&
-                        lagCorrelations.TryGetValue(bestLag + 1, out float yRight))
+                    float yCenter = maxCorrelation;
+                    float denom = yLeft - 2f * yCenter + yRight;
+                    if (Math.Abs(denom) > 0.0001f)
                     {
-                        float yCenter = maxCorrelation;
-                        float denominator = (yLeft - 2 * yCenter + yRight);
-                        if (Math.Abs(denominator) > 0.0001f)
-                        {
-                            float offset = (yLeft - yRight) / (2 * denominator);
-                            fractionalLag = bestLag + offset;
-                        }
+                        float offset = (yLeft - yRight) / (2f * denom);
+                        fractionalLag += offset;
                     }
-                }
-
-                float periodInSeconds = fractionalLag * timePerFrame;
-                float detectedBPM = 60f / periodInSeconds;
-
-                detectedBPM = Math.Clamp(detectedBPM, minBPM, maxBPM);
-
-                if (_confidence > 0.5f)
-                {
-                    if (Math.Abs(detectedBPM - _currentBPM) > (_currentBPM * 0.25f))
-                    {
-                        _confidence *= 0.5f;
-                    }
-                }
-                else
-                {
-                    if (_currentBPM > 0 && Math.Abs(detectedBPM - _currentBPM) > (_currentBPM * 0.35f))
-                    {
-                        _currentBPM = detectedBPM;
-                        _bpmHistory.Clear();
-                        _confidence = 0.2f;
-                    }
-                }
-
-                _currentBPM = _currentBPM * 0.7f + detectedBPM * 0.3f;
-
-                _bpmHistory.Add(_currentBPM);
-                if (_bpmHistory.Count > 30)
-                    _bpmHistory.RemoveAt(0);
-
-                float avgEnergy = _energyHistory.Average();
-                float correlationConfidence = 0;
-                if (avgEnergy > 0)
-                    correlationConfidence = Math.Min(1.0f, maxCorrelation / (avgEnergy * avgEnergy) * 3f);
-
-                float stabilityConfidence = 1.0f;
-                if (_bpmHistory.Count >= 10)
-                {
-                    float avgBPM = _bpmHistory.Skip(_bpmHistory.Count - 10).Average();
-                    float variance = _bpmHistory.Skip(_bpmHistory.Count - 10).Select(b => Math.Abs(b - avgBPM)).Average();
-                    stabilityConfidence = Math.Max(0, 1.0f - variance / 15f);
-                }
-
-                _confidence = (correlationConfidence * 0.3f + stabilityConfidence * 0.7f);
-
-                if (_confidence > 0.75f && _bpmHistory.Count >= 20)
-                {
-                    _lockedBPM = _bpmHistory.Skip(_bpmHistory.Count - 15).Average();
                 }
             }
 
-            if (_bpmHistory.Count > 8)
+            float periodInSeconds = fractionalLag * timePerFrame;
+            float detectedBPM = 60f / periodInSeconds;
+            detectedBPM = Math.Clamp(detectedBPM, minBPM, maxBPM);
+
+            // ────────────────────────────────────────────────
+            // Blending & confidence update
+            // ────────────────────────────────────────────────
+            if (_confidence > 0.55f)
             {
-                var recentBPMs = _bpmHistory.Skip(_bpmHistory.Count - 8).ToList();
+                if (Math.Abs(detectedBPM - _currentBPM) > _currentBPM * 0.28f)
+                    _confidence *= 0.45f;
+            }
+            else if (_currentBPM > 0f && Math.Abs(detectedBPM - _currentBPM) > _currentBPM * 0.40f)
+            {
+                _currentBPM = detectedBPM;
+                _bpmHistory.Clear();
+                _confidence = 0.18f;
+            }
+
+            _currentBPM = _currentBPM * 0.68f + detectedBPM * 0.32f;  // slightly faster adaptation
+
+            _bpmHistory.Add(_currentBPM);
+            if (_bpmHistory.Count > 40)  // longer history → more stable average
+                _bpmHistory.RemoveAt(0);
+
+            // Confidence components
+            float avgEnergy = _energyHistory.Count > 0 ? _energyHistory.Average() : 0f;
+            float correlationConfidence = 0f;
+            if (avgEnergy > 0.0001f)
+                correlationConfidence = Math.Min(1f, maxCorrelation / (avgEnergy * avgEnergy * 1.5f));  // less explosive
+
+            float stabilityConfidence = 1f;
+            if (_bpmHistory.Count >= 12)
+            {
+                var recent = _bpmHistory.Skip(_bpmHistory.Count - 12).ToList();
+                float avg = recent.Average();
+                float variance = recent.Select(b => Math.Abs(b - avg)).Average();
+                stabilityConfidence = Math.Max(0f, 1f - variance / 12f);  // tighter tolerance
+            }
+
+            _confidence = correlationConfidence * 0.35f + stabilityConfidence * 0.65f;
+
+            if (_confidence > 0.78f && _bpmHistory.Count >= 24)
+                _lockedBPM = _bpmHistory.Skip(_bpmHistory.Count - 18).Average();
+
+            // Final display update
+            if (_bpmHistory.Count > 10)
+            {
+                var recentBPMs = _bpmHistory.Skip(_bpmHistory.Count - 10).ToList();
                 _displayBPM = recentBPMs.Average();
-                _displayConfidence = _confidence * 100;
+                _displayConfidence = _confidence * 100f;
             }
         }
-
         /// <summary>
         /// Not used in drawn mode — rendering is driven by DrawnUI's Paint() pipeline.
         /// </summary>

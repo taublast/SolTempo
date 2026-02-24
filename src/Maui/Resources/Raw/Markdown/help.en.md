@@ -41,11 +41,10 @@ Enable to display sharp and flat semitones (C#, Eb, etc.) as distinct note names
 
 ## BPM Detection Module
 
-Best used for BPM detection of a music or a metronome.  
-This module analyses the audio signal to detect the tempo of the music being played. 
+Designed tofor BPM detection of a music or a metronome inside a 40-260 bpm range.  
 It displays the beats per minute (BPM) and a visual representation of the detected tempo.  
-Note that tempo of the music can change over time inside same musical composition.
-This module gives best results with audio gain turned off.
+Note that tempo of the music can change over time inside same musical composition.  
+If you think the BPM reading might be inaccurate, try tapping on the display card to reset the listener.
 
 ## Audio Settings
 
