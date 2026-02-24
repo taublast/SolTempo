@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleVersion</key>
+  <string>100001</string>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+  <key>LSRequiresIPhoneOS</key>
+  <true/>
+  <key>UIDesignRequiresCompatibility</key>
+  <true/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
+	</array>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Allow microphone to detect pitch and tempo</string>
+  <key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+  <key>UIRequiresFullScreen</key>
+  <true/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+  <key>XSAppIconAssets</key>
+  <string>Assets.xcassets/icon.appiconset</string>
+</dict>
+</plist>

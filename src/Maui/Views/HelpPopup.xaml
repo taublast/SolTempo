@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<views:AnimatedPopup
+    x:Class="ShadersCamera.Views.HelpPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
+    xmlns:ui="clr-namespace:SolTempo.UI"
+    xmlns:views="clr-namespace:ShadersCamera.Views"
+    BackgroundColor="#44000000"
+    HorizontalOptions="Fill"
+    Tapped="OnBackgroundTapped"
+    VerticalOptions="Fill">
+
+    <draw:SkiaLayer x:Name="Animated" VerticalOptions="Fill">
+        <draw:SkiaLayer HorizontalOptions="Center" VerticalOptions="Center">
+
+            <draw:SkiaShape
+                Margin="8,0"
+                BackgroundColor="Black"
+                BlockGesturesBelow="True"
+                CornerRadius="24"
+                HorizontalOptions="Center"
+                MaximumHeightRequest="500"
+                MaximumWidthRequest="500"
+                MinimumWidthRequest="300"
+                StrokeColor="Goldenrod"
+                StrokeWidth="1"
+                UseCache="Operations"
+                VerticalOptions="Center"
+                WidthRequest="330">
+
+                <draw:SkiaScroll HorizontalOptions="Fill">
+
+                    <draw:SkiaStack Spacing="0">
+
+                        <!--  Title  -->
+                        <draw:SkiaStack
+                            Padding="24,24,24,12"
+                            HorizontalOptions="Fill"
+                            Spacing="28"
+                            UseCache="Image">
+
+                            <!--<draw:SkiaRichLabel
+                            FontAttributes="Bold"
+                            FontFamily="FontTextTitle"
+                            FontSize="18"
+                            HorizontalOptions="Center"
+                            Text="Help"
+                            TextColor="DarkGray"
+                            UseCache="Operations" />-->
+
+                            <draw:SkiaRichLabel
+                                x:Name="HelpContent"
+                                CodeTextColor="Aquamarine"
+                                FontFamily="FontTextTitle"
+                                FontSize="14"
+                                HorizontalOptions="Fill"
+                                LineSpacing="0.8"
+                                LinkTapped="HelpContent_OnLinkTapped"
+                                ParagraphSpacing="1.2"
+                                TextColor="Gainsboro"
+                                UseCache="Operations" />
+
+                            <draw:SkiaRow
+                                Margin="0,0,0,8"
+                                Spacing="10"
+                                UseCache="Operations">
+
+                                <draw:SkiaSvg
+                                    LockRatio="1"
+                                    SvgString="{x:StaticResource SvgLogoMaui}"
+                                    Tapped="TappedMaui"
+                                    WidthRequest="44" />
+
+                                <draw:SkiaSvg
+                                    Margin="0,-2,0,0"
+                                    LockRatio="1"
+                                    SvgString="{x:StaticResource SvgLogoDrawnUi}"
+                                    Tapped="TappedDrawnUi"
+                                    WidthRequest="52" />
+
+                            </draw:SkiaRow>
+
+                        </draw:SkiaStack>
+
+
+
+                    </draw:SkiaStack>
+
+                </draw:SkiaScroll>
+
+            </draw:SkiaShape>
+
+            <draw:SkiaShape
+                BackgroundColor="Black"
+                HorizontalOptions="End"
+                LockRatio="1"
+                StrokeColor="Goldenrod"
+                StrokeWidth="1"
+                Tapped="TappedClose"
+                TranslationX="0"
+                TranslationY="-10"
+                Type="Circle"
+                UseCache="Image"
+                WidthRequest="28">
+
+                <draw:SkiaLabel
+                    FontFamily="FontIcons"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="{x:Static ui:IconFont.Close}"
+                    TextColor="Gray"
+                    VerticalOptions="Center" />
+
+            </draw:SkiaShape>
+        </draw:SkiaLayer>
+    </draw:SkiaLayer>
+</views:AnimatedPopup>

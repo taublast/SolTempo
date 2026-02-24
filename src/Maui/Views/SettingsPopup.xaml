@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<views:AnimatedPopup
+    x:Class="ShadersCamera.Views.SettingsPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
+    xmlns:effects="clr-namespace:SolTempo.Effects"
+    xmlns:ui="clr-namespace:SolTempo.UI"
+    xmlns:views="clr-namespace:ShadersCamera.Views"
+    BackgroundColor="#44000000"
+    HorizontalOptions="Fill"
+    Tapped="AudioPageSettings_OnTapped"
+    VerticalOptions="Fill">
+
+    <views:DebugLayer x:Name="Animated" VerticalOptions="Fill">
+
+        <!--<draw:SkiaControl.VisualEffects>
+
+            <effects:PlayOnAppearingShaderEffect DurationMs="300"
+                                                 ShaderSource="Shaders\appear_orb.sksl" />
+
+        </draw:SkiaControl.VisualEffects>-->
+
+        <draw:SkiaLayer HorizontalOptions="Center" VerticalOptions="Center">
+
+            <draw:SkiaShape
+                Margin="8,0"
+                BackgroundColor="Black"
+                BlockGesturesBelow="True"
+                CornerRadius="24"
+                HorizontalOptions="Center"
+                MaximumHeightRequest="500"
+                MaximumWidthRequest="500"
+                MinimumWidthRequest="300"
+                StrokeColor="Goldenrod"
+                StrokeWidth="1"
+                UseCache="Operations"
+                VerticalOptions="Center">
+
+                <draw:SkiaScroll HorizontalOptions="Fill">
+
+                    <draw:SkiaStack Spacing="0" UseCache="Image">
+
+
+                        <!--<draw:SkiaBackdrop
+                Blur="0"
+                HorizontalOptions="Fill"
+                IsVisible="False"
+                VerticalOptions="Fill">
+                <draw:SkiaControl.VisualEffects>
+
+                    <effects:GlassBackdropEffect
+                        BlurStrength="1.0"
+                        CornerRadius="10"
+                        GlassDepth="1.66"
+                        GlassOpacity="0.9"
+                        ShaderSource="Shaders\glass.sksl" />
+
+                </draw:SkiaControl.VisualEffects>
+            </draw:SkiaBackdrop>-->
+
+                        <!--  MODULE  -->
+                        <draw:SkiaStack
+                            Margin="24"
+                            HorizontalOptions="Fill"
+                            Spacing="24"
+                            UseCache="Operations"
+                            VerticalOptions="Start">
+
+                            <draw:SkiaRichLabel
+                                FontAttributes="Bold"
+                                FontFamily="FontTextTitle"
+                                FontSize="18"
+                                HorizontalOptions="Center"
+                                Text="Pitch Settings"
+                                TextColor="DarkGray"
+                                UseCache="Operations" />
+
+
+                            <!--  NOTATION  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                MinimumHeightRequest="32"
+                                Tapped="SelectNotation"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Notation"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaRichLabel
+                                    x:Name="LabelNotation"
+                                    CharacterSpacing="1.4"
+                                    FontAttributes="Bold"
+                                    FontSize="18"
+                                    HorizontalOptions="End"
+                                    MaxLines="1"
+                                    MaximumWidthRequest="150"
+                                    TextColor="Goldenrod"
+                                    VerticalOptions="Fill"
+                                    VerticalTextAlignment="Center" />
+
+                            </draw:SkiaLayout>
+
+                            <!--  MODE VOICE  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                MinimumHeightRequest="32"
+                                Tapped="SelectNotesMode"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Detection"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaRichLabel
+                                    x:Name="LabelNotesMode"
+                                    CharacterSpacing="1.4"
+                                    FontAttributes="Bold"
+                                    FontSize="18"
+                                    HorizontalOptions="End"
+                                    MaxLines="1"
+                                    MaximumWidthRequest="150"
+                                    TextColor="Goldenrod"
+                                    VerticalOptions="Fill"
+                                    VerticalTextAlignment="Center" />
+
+                            </draw:SkiaLayout>
+
+                            <!--  SEMI SWITCH  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Sharp Notes"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaSwitch
+                                    x:Name="SwitchSemi"
+                                    ColorFrameOn="Goldenrod"
+                                    HeightRequest="28"
+                                    HorizontalOptions="End"
+                                    Toggled="UseSemiSwitch_OnToggled"
+                                    WidthRequest="46" />
+
+                            </draw:SkiaLayout>
+
+
+                        </draw:SkiaStack>
+
+                        <!--  ***********************************  -->
+
+                        <!--  AUDIO  -->
+                        <draw:SkiaStack
+                            Margin="24"
+                            HorizontalOptions="Fill"
+                            Spacing="24"
+                            UseCache="Operations"
+                            VerticalOptions="Start">
+
+                            <draw:SkiaRichLabel
+                                FontAttributes="Bold"
+                                FontFamily="FontTextTitle"
+                                FontSize="18"
+                                HorizontalOptions="Center"
+                                Text="Audio Settings"
+                                TextColor="DarkGray"
+                                UseCache="Operations" />
+
+
+                            <!--  SOURCE  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                MinimumHeightRequest="32"
+                                Tapped="SelectAudioSource"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Source"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaRichLabel
+                                    x:Name="LabelSource"
+                                    CharacterSpacing="1.4"
+                                    FontAttributes="Bold"
+                                    FontSize="18"
+                                    HorizontalOptions="End"
+                                    MaxLines="1"
+                                    MaximumWidthRequest="150"
+                                    TextColor="Goldenrod"
+                                    VerticalOptions="Fill"
+                                    VerticalTextAlignment="Center" />
+
+                            </draw:SkiaLayout>
+
+                            <!--  GAIN SWITCH  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Use Gain"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaSwitch
+                                    x:Name="SwitchGain"
+                                    ColorFrameOn="Goldenrod"
+                                    HeightRequest="28"
+                                    HorizontalOptions="End"
+                                    Toggled="UseGainSwitch_OnToggled"
+                                    WidthRequest="46" />
+
+                            </draw:SkiaLayout>
+
+
+                        </draw:SkiaStack>
+
+                    </draw:SkiaStack>
+
+                </draw:SkiaScroll>
+
+            </draw:SkiaShape>
+
+            <draw:SkiaShape
+                BackgroundColor="Black"
+                HorizontalOptions="End"
+                LockRatio="1"
+                StrokeColor="Goldenrod"
+                StrokeWidth="1"
+                Tapped="TappedClose"
+                TranslationX="0"
+                TranslationY="-10"
+                Type="Circle"
+                UseCache="Image"
+                WidthRequest="28">
+
+                <draw:SkiaLabel
+                    FontFamily="FontIcons"
+                    FontSize="18"
+                    HorizontalOptions="Center"
+                    Text="{x:Static ui:IconFont.Close}"
+                    TextColor="Gray"
+                    VerticalOptions="Center" />
+
+            </draw:SkiaShape>
+
+
+
+        </draw:SkiaLayer>
+
+    </views:DebugLayer>
+</views:AnimatedPopup>
+
