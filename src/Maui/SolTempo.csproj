@@ -73,11 +73,7 @@
 
     <None Remove="Resources\Images\" />
 
-    <None Remove="Resources\Raw\baboon.jpg" />
-
     <None Remove="Resources\Raw\dotnet_bot.png" />
-
-    <None Remove="Resources\Raw\Images\8.jpg" />
 
     <None Remove="Resources\Raw\Shaders\invert.sksl" />
 
@@ -134,11 +130,6 @@
             <LastGenOutput>ResStrings.Designer.cs</LastGenOutput>
             <Generator>PublicResXFileCodeGenerator</Generator>
         </EmbeddedResource>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Extensions\" />
-      <Folder Include="Services\" />
     </ItemGroup>
 
     <ItemGroup>
