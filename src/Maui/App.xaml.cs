@@ -9,8 +9,11 @@ namespace SolTempo
             Super.SetLocale("en"); //todo add localization support
 
             InitializeComponent();
+        }
 
-            MainPage = new AppShell();
+        protected override Window CreateWindow(IActivationState activationState)
+        {
+            return new Window(new AppShell());
         }
 
         protected override void OnStart()
