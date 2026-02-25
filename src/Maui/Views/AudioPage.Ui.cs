@@ -178,14 +178,12 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
-
-                                            ShaderSource = @"Shaders\glass.sksl",
-
+                                            Emboss = 9.2f,
                                             BlurStrength = 1.0f,
-                                            GlassOpacity = 0.9f,
-                                            GlassColor = Colors.Black.WithAlpha(0.33f),
+                                            Opacity = 0.9f,
+                                            Tint = Colors.Black.WithAlpha(0.33f),
                                             CornerRadius = 24,
-                                            GlassDepth = 1.66f
+                                            Depth = 1.66f
                                         }
                                     }
                                 },
@@ -239,14 +237,12 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
-
-                                            ShaderSource = @"Shaders\glass.sksl",
-
+                                            Emboss = 9.2f,
                                             BlurStrength = 1.0f,
-                                            GlassOpacity = 0.9f,
-                                            GlassColor = Colors.Black.WithAlpha(0.33f),
-                                            CornerRadius = 32,
-                                            GlassDepth = 1.66f
+                                            Opacity = 0.9f,
+                                            Tint = Colors.Black.WithAlpha(0.33f),
+                                            CornerRadius = 24,
+                                            Depth = 1.66f
                                         }
                                     }
                                 },
@@ -299,21 +295,20 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
-                                            ShaderSource = @"Shaders\glass.sksl",
-
+                                            Emboss = 13.5f,
                                             BlurStrength = 1.0f,
-                                            GlassOpacity = 0.9f,
-                                            GlassColor = Colors.White.WithAlpha(0.05f),
+                                            Opacity = 0.9f,
+                                            Tint = Colors.White.WithAlpha(0.05f),
                                             CornerRadius = 32,  // Match parent SkiaShape
-                                            GlassDepth = 0.75f   // 3D emboss intensity (0.0-2.0+)
+                                            Depth = 0.75f   // 3D emboss intensity (0.0-2.0+)
                                         }
                                     }
                                 },
 
                                 new SkiaRow()
                                 {
-                                    UseCache = SkiaCacheType.Operations,
-                                    Margin = new Thickness(20, 12),
+                                    UseCache = SkiaCacheType.GPU,
+                                    Padding = new Thickness(20, 12),
                                     Spacing = 16,
                                     HorizontalOptions = LayoutOptions.Center,
                                     VerticalOptions = LayoutOptions.Center,
@@ -323,7 +318,7 @@ public partial class AudioPage
                                         new TintedShape()
                                         {
                                             TintColor = Colors.CornflowerBlue,
-                                            UseCache = SkiaCacheType.Image,
+                                            UseCache = SkiaCacheType.OperationsFull,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#3B82F6"),
                                             WidthRequest = 48,
@@ -394,7 +389,7 @@ public partial class AudioPage
                                         // Settings Button
                                         new TintedShape()
                                         {
-                                            UseCache = SkiaCacheType.Image,
+                                            UseCache = SkiaCacheType.OperationsFull,
                                             TintColor = Colors.DarkCyan,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#6B7280"),
@@ -421,7 +416,7 @@ public partial class AudioPage
                                         // Help Button
                                         new TintedShape()
                                         {
-                                            UseCache = SkiaCacheType.Image,
+                                            UseCache = SkiaCacheType.OperationsFull,
                                             //TintColor = Colors.Orange,
                                             CornerRadius = 12,
                                             BackgroundColor = Color.FromArgb("#6B7280"),
@@ -501,7 +496,7 @@ public partial class AudioPage
                 new SkiaLabelFps()
                 {
                     Margin = new(0, 0, 4, 24),
-                    ForceRefresh = true,
+                    //ForceRefresh = true,
                     VerticalOptions = LayoutOptions.End,
                     HorizontalOptions = LayoutOptions.End,
                     Rotation = -45,

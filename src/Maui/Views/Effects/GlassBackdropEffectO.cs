@@ -4,54 +4,48 @@ namespace SolTempo.Effects;
 /// Glass backdrop effect with customizable corner radius.
 /// Applies a liquid glass shader effect that respects rounded corners.
 /// </summary>
-public class GlassBackdropEffect : SkiaShaderEffect
+public class GlassBackdropEffectO : SkiaShaderEffect
 {
-    public GlassBackdropEffect()
+    public GlassBackdropEffectO()
     {
-        ShaderSource = @"Shaders\glass.sksl";
+        ShaderSource = @"Shaders\glass_o.sksl";
     }
 
-    private readonly float[] _uniformTint = new float[4];
+    private readonly float[] _uniformResolution = new float[2];
+    private readonly float[] _uniformGlassColor = new float[4];
 
     public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create(
         nameof(CornerRadius),
         typeof(float),
-        typeof(GlassBackdropEffect),
+        typeof(GlassBackdropEffectO),
         0f,
         propertyChanged: OnPropertyChanged);
 
-    public static readonly BindableProperty EmbossProperty = BindableProperty.Create(
-        nameof(Emboss),
+    public static readonly BindableProperty GlassDepthProperty = BindableProperty.Create(
+        nameof(GlassDepth),
         typeof(float),
-        typeof(GlassBackdropEffect),
-        10.0f,
-        propertyChanged: OnPropertyChanged);
-
-    public static readonly BindableProperty DepthProperty = BindableProperty.Create(
-        nameof(Depth),
-        typeof(float),
-        typeof(GlassBackdropEffect),
+        typeof(GlassBackdropEffectO),
         1.0f,
         propertyChanged: OnPropertyChanged);
 
     public static readonly BindableProperty BlurStrengthProperty = BindableProperty.Create(
         nameof(BlurStrength),
         typeof(float),
-        typeof(GlassBackdropEffect),
+        typeof(GlassBackdropEffectO),
         1.0f,
         propertyChanged: OnPropertyChanged);
 
-    public static readonly BindableProperty OpacityProperty = BindableProperty.Create(
-        nameof(Opacity),
+    public static readonly BindableProperty GlassOpacityProperty = BindableProperty.Create(
+        nameof(GlassOpacity),
         typeof(float),
-        typeof(GlassBackdropEffect),
+        typeof(GlassBackdropEffectO),
         0.75f,
         propertyChanged: OnPropertyChanged);
 
-    public static readonly BindableProperty TintProperty = BindableProperty.Create(
-        nameof(Tint),
+    public static readonly BindableProperty GlassColorProperty = BindableProperty.Create(
+        nameof(GlassColor),
         typeof(Color),
-        typeof(GlassBackdropEffect),
+        typeof(GlassBackdropEffectO),
         Colors.Transparent,
         propertyChanged: OnPropertyChanged);
 
@@ -66,27 +60,15 @@ public class GlassBackdropEffect : SkiaShaderEffect
     }
 
     /// <summary>
-    /// Gets or sets the emboss/refraction intensity as a percentage of the image width.
-    /// Controls both background distortion and border glow width together.
-    /// Density-independent: same value produces the same look on all screen densities.
-    /// Range: 0.0 (flat glass) to ~30.0 (very pronounced). Default: 10.0.
-    /// </summary>
-    public float Emboss
-    {
-        get => (float)GetValue(EmbossProperty);
-        set => SetValue(EmbossProperty, value);
-    }
-
-    /// <summary>
     /// Gets or sets the 3D depth/emboss intensity of the glass effect.
     /// Controls the refraction strength for the curved appearance.
     /// Range: 0.0 (flat/no distortion) to 2.0+ (very pronounced).
     /// Default: 1.0.
     /// </summary>
-    public float Depth
+    public float GlassDepth
     {
-        get => (float)GetValue(DepthProperty);
-        set => SetValue(DepthProperty, value);
+        get => (float)GetValue(GlassDepthProperty);
+        set => SetValue(GlassDepthProperty, value);
     }
 
     /// <summary>
@@ -104,10 +86,10 @@ public class GlassBackdropEffect : SkiaShaderEffect
     /// Range: 0.0 (fully transparent) to 1.0 (fully opaque).
     /// Default: 0.75.
     /// </summary>
-    public float Opacity
+    public float GlassOpacity
     {
-        get => (float)GetValue(OpacityProperty);
-        set => SetValue(OpacityProperty, value);
+        get => (float)GetValue(GlassOpacityProperty);
+        set => SetValue(GlassOpacityProperty, value);
     }
 
     /// <summary>
@@ -115,15 +97,15 @@ public class GlassBackdropEffect : SkiaShaderEffect
     /// fully transparent = no tint, fully opaque = solid color overlay.
     /// Default: Transparent (no tint).
     /// </summary>
-    public Color Tint
+    public Color GlassColor
     {
-        get => (Color)GetValue(TintProperty);
-        set => SetValue(TintProperty, value);
+        get => (Color)GetValue(GlassColorProperty);
+        set => SetValue(GlassColorProperty, value);
     }
 
     private static void OnPropertyChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (bindable is GlassBackdropEffect effect)
+        if (bindable is GlassBackdropEffectO effect)
         {
             effect.Update();
         }
@@ -133,19 +115,29 @@ public class GlassBackdropEffect : SkiaShaderEffect
     {
         var uniforms = base.CreateUniforms(destination);
 
+        // Fix iResolution to be in logical points (base class sets it to pixels).
+        // This makes renderingScale = iImageResolution / iResolution = actual screen density,
+        // so the shader can convert iCornerRadius from points to pixels correctly.
         var scale = Parent?.RenderingScale ?? 1f;
-        uniforms["iCornerRadius"] = CornerRadius * scale;
-        uniforms["iEmboss"] = Emboss;
+        _uniformResolution[0] = destination.Width / scale;
+        _uniformResolution[1] = destination.Height / scale;
+        uniforms["iResolution"] = _uniformResolution;
 
-        uniforms["iDepth"] = Depth;
+        // Pass corner radius in points - shader converts to pixels via renderingScale
+        uniforms["iCornerRadius"] = CornerRadius;
+
+        uniforms["iGlassDepth"] = GlassDepth;
         uniforms["iBlurStrength"] = BlurStrength;
-        uniforms["iOpacity"] = Opacity;
+        uniforms["iGlassOpacity"] = GlassOpacity;
 
-        var c = Tint;
-        _uniformTint[0] = (float)c.Red; _uniformTint[1] = (float)c.Green;
-        _uniformTint[2] = (float)c.Blue; _uniformTint[3] = (float)c.Alpha;
-        uniforms["iTint"] = _uniformTint;
+        // GlassColor: rgb = tint color, a = tint strength (0 = no tint, nothing changes)
+        var c = GlassColor;
+        _uniformGlassColor[0] = (float)c.Red; _uniformGlassColor[1] = (float)c.Green;
+        _uniformGlassColor[2] = (float)c.Blue; _uniformGlassColor[3] = (float)c.Alpha;
+        uniforms["iGlassColor"] = _uniformGlassColor;
 
         return uniforms;
     }
 }
+
+

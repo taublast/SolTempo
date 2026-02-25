@@ -6,10 +6,11 @@ uniform shader iImage1;          // Texture
 uniform float2 iOffset;          // Top-left corner of DrawingRect
 uniform float2 iOrigin;          // Mouse drag started here
 uniform float  iCornerRadius;    // Corner radius in pixels (pre-scaled by RenderingScale on C# side)
-uniform float  iGlassDepth;      // 3D depth/emboss intensity (0.0 = flat, 1.0 = normal, 2.0+ = pronounced)
+uniform float  iEmboss;     // Refraction/emboss displacement as % of image width (0=flat, 10=default, density-independent)
+uniform float  iDepth;      // 3D depth/emboss intensity (0.0 = flat, 1.0 = normal, 2.0+ = pronounced)
 uniform float  iBlurStrength;    // Blur intensity multiplier (1.0 = default, 0.0 = no blur, 2.0 = double)
-uniform float  iGlassOpacity;    // Glass panel opacity (0.0 = fully transparent, 1.0 = fully opaque), default 0.75
-uniform float4 iGlassColor;      // Glass tint color (rgb = tint, a = tint strength; a=0 means no tint)
+uniform float  iOpacity;    // Glass panel opacity (0.0 = fully transparent, 1.0 = fully opaque), default 0.75
+uniform float4 iTint;      // Glass tint color (rgb = tint, a = tint strength; a=0 means no tint)
 
 //Originated from MIT licenced https://github.com/bergice/liquidglass
 //Adapted/edited by taublast, still MIT
@@ -109,7 +110,7 @@ half4 main(float2 fragCoord) {
     float2 inputCoord = fragCoord - iOffset;
 
     // Minimal setup needed to compute distance & mask
-    float radiusInPixels = iCornerRadius * renderingScale.x;
+    float radiusInPixels = iCornerRadius;
 
     float2 center = iImageResolution * 0.5;
     float2 size   = (iImageResolution - EDGE_DISTANCE * 2.0) * 0.5;
@@ -137,14 +138,15 @@ half4 main(float2 fragCoord) {
     float eta = 1.0 / 1.5;
     float2 incident = -domeNormal;
     float2 refractVec = refract(incident, domeNormal, eta);
-    float2 curvedRefractUV  = inputCoord + refractVec  * (30.0 * renderingScale.x) * iGlassDepth; //30
+    float zoomDisplace = iImageResolution.x * (iEmboss / 100.0);
+    float2 curvedRefractUV  = inputCoord + refractVec  * zoomDisplace * iDepth;
 
     // Edge contour refraction
     float contourFalloff = exp(-abs(dist) * 0.4);
     float2 normal = getNormal(inputCoord, center, size, radiusInPixels);
     float2 domeNormalContour = normal * pow(contourFalloff, 1.5);
     float2 refractVecContour = refract(float2(0.0), domeNormalContour, eta);
-    float2 uvContour = inputCoord + refractVecContour * (35.0 * renderingScale.x) * iGlassDepth * contourFalloff; //35
+    float2 uvContour = inputCoord + refractVecContour * (zoomDisplace * 1.167) * iDepth * contourFalloff;
 
     // Blend refractions
     float edgeWeight    = smoothstep(0.0, 1.0, abs(dist));
@@ -161,22 +163,22 @@ half4 main(float2 fragCoord) {
     float verticalBand = 1.0 - smoothstep(-1.5, -0.2, local.y);
     float topShadow    = edgeFalloff * verticalBand;
     half3 shadowColor  = half3(0.0);
-    base = mix(base, shadowColor, topShadow * 0.25 * iGlassDepth);
+    base = mix(base, shadowColor, topShadow * 0.25 * iDepth);
 
     // Edge glow
-    float glowWidthPixels = 11.0 * iGlassDepth * renderingScale.x;
+    float glowWidthPixels = zoomDisplace * (11.0 / 30.0) * iDepth;
     float edge = 1.0 - smoothstep(0.0, glowWidthPixels, dist * -2.0);
     half3 edgeSample = iImage1.eval(uvContour).rgb;
     half3 glow = mix(edgeSample * 5.0, half3(0.5), 0.1);
-    half3 color = mix(base * 1.1, glow * 1.1, edge * 0.25 * iGlassDepth);
+    half3 color = mix(base * 1.1, glow * 1.1, edge * 0.25 * iDepth);
 
     // Tint
-    color = mix(color, iGlassColor.rgb, iGlassColor.a);
+    color = mix(color, iTint.rgb, iTint.a);
 
     // Final composite
     half4 originalColor = iImage1.eval(inputCoord);
     half3 finalColor = mix(originalColor.rgb, color, alpha);
-    float finalAlpha = originalColor.a * (iGlassOpacity * alpha + (1.0 - alpha));
+    float finalAlpha = originalColor.a * (iOpacity * alpha + (1.0 - alpha));
 
     return half4(finalColor, finalAlpha);
 }
