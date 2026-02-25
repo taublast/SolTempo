@@ -1,0 +1,145 @@
+// Celebration: Golden Shockwave + Confetti (ULTRA FAST)
+// A fast, high-impact "WOW" achievement effect.
+// A golden ring expands outward, followed by simple falling confetti.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+uniform shader iImage1;
+
+const float TAU = 6.28318530718;
+
+// Ultra-fast hash
+float hash12(float2 p) {
+    float3 p3  = fract(float3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+half4 main(float2 fragCoord) {
+    float2 screenCoord = fragCoord - iOffset;
+    float2 renderingScale = iImageResolution.xy / iResolution.xy;
+    float2 inputCoord = screenCoord * renderingScale;
+
+    float2 uv = screenCoord / iResolution.xy;
+    float aspect = iResolution.x / iResolution.y;
+
+    // Center driven by iCenter uniform (default 0.5, 0.44)
+    float2 centered = uv - iCenter;
+    centered.x *= aspect;
+
+    float distSq = dot(centered, centered);
+    float dist = sqrt(distSq);
+    
+    // === ENVELOPE ===
+    float envelope = clamp(progress * 5.0, 0.0, 1.0) * clamp((1.0 - progress) * 3.0, 0.0, 1.0);
+
+    // === SHOCKWAVE RING ===
+    // A fast expanding ring
+    float ringRadius = progress * 1.5; // Expands outward
+    float ringThickness = 0.05 + (1.0 - progress) * 0.1; // Thins out as it expands
+    
+    // Fast ring calculation using absolute distance
+    float ringDist = abs(dist - ringRadius);
+    float ring = max(0.0, 1.0 - ringDist / ringThickness);
+    ring = ring * ring; // Sharpen
+    
+    // Add some "energy" to the ring using a simple sine wave based on angle
+    // Fast fake angle using normalized coordinates
+    float2 normDir = centered / (dist + 0.0001);
+    float energy = sin(normDir.x * 10.0 + iTime * 5.0) * sin(normDir.y * 10.0 - iTime * 5.0);
+    ring *= 1.0 + max(0.0, energy) * 0.5;
+    
+    // Fade ring out over time
+    ring *= clamp((0.6 - progress) * 2.5, 0.0, 1.0);
+
+    // === CENTER FLASH ===
+    // A quick bright flash at the start
+    float flash = 0.05 / (distSq + 0.01);
+    flash *= clamp((0.2 - progress) * 5.0, 0.0, 1.0);
+
+    // === FALLING CONFETTI (Fast Grid Approach) ===
+    float confetti = 0.0;
+    half3 confettiColor = half3(0.0);
+    
+    // Confetti starts falling after the initial burst
+    float confEnv = clamp((progress - 0.1) * 5.0, 0.0, 1.0) * clamp((1.0 - progress) * 2.0, 0.0, 1.0);
+
+    if (confEnv > 0.0) {
+        // Create a grid that moves downwards over time
+        // The grid moves faster as progress increases (gravity effect)
+        float fallSpeed = progress * progress * 2.0;
+        float2 gridUv = screenCoord * 0.02;
+        gridUv.y -= fallSpeed * 10.0; // Move grid down
+        
+        float2 gridId = floor(gridUv);
+        
+        // Hash for this cell
+        float h = hash12(gridId);
+        
+        // Only ~25% of cells have confetti
+        if (h > 0.75) {
+            float2 gridF = fract(gridUv);
+            
+            // Add some horizontal sway based on time and cell ID
+            float sway = sin(iTime * 3.0 + h * TAU) * 0.3;
+            
+            // Confetti position within cell
+            float2 cPos = float2(0.5 + sway, 0.5);
+            
+            // Distance to confetti
+            float2 cd = gridF - cPos;
+            
+            // Make them look like little rectangles/lines spinning
+            // Fast 2D rotation approximation
+            float spin = iTime * (5.0 + h * 10.0);
+            float s = sin(spin);
+            float c = cos(spin);
+            float2 rotCd = float2(cd.x * c - cd.y * s, cd.x * s + cd.y * c);
+            
+            // Box distance (fast rectangle)
+            float2 boxDist = abs(rotCd) - float2(0.1, 0.2);
+            float confShape = max(boxDist.x, boxDist.y);
+            
+            // Anti-aliased edge
+            float confAlpha = clamp(1.0 - confShape * 20.0, 0.0, 1.0);
+            
+            if (confAlpha > 0.0) {
+                confetti += confAlpha;
+                
+                // Pick a random bright color based on the hash
+                float colorHash = fract(h * 123.456);
+                if (colorHash < 0.33) {
+                    confettiColor = half3(1.0, 0.2, 0.3); // Red/Pink
+                } else if (colorHash < 0.66) {
+                    confettiColor = half3(0.2, 0.8, 1.0); // Cyan/Blue
+                } else {
+                    confettiColor = half3(1.0, 0.8, 0.1); // Gold/Yellow
+                }
+            }
+        }
+    }
+    
+    // === COMBINE ===
+    half3 gold = half3(1.00, 0.85, 0.20);
+    half3 white = half3(1.00, 0.98, 0.90);
+    
+    // Ring and flash are additive
+    half3 energyColor = (gold * ring + white * flash) * envelope;
+    
+    // Confetti is alpha blended over the energy
+    half3 finalEffect = mix(energyColor, confettiColor * confEnv, min(1.0, confetti));
+    
+    // Sample background
+    half4 bgColor = iImage1.eval(inputCoord);
+    
+    // Additive blend the final effect over the background
+    half3 finalColor = bgColor.rgb + finalEffect;
+    
+    return half4(clamp(finalColor, 0.0, 1.0), bgColor.a);
+}

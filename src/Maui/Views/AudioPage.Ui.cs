@@ -43,7 +43,7 @@ public partial class AudioPage
     private HelpPopup _helpPopup;
     private LayerWIthEffects _mainStack;
 
-    private AchievementEngine _achievementEngine;
+    private Achievements _achievementEngine;
     private SkiaShape _achievementBanner;
     private SkiaLabel _achievementBannerLabel;
     private CancellationTokenSource _bannerCts;
@@ -606,40 +606,37 @@ public partial class AudioPage
 
     protected RestartingTimer<object> TimerUpdateLocked;
 
-    private void ShowAchievementBanner(string name)
+    private async void ShowAchievementBanner(string name)
     {
-        MainThread.BeginInvokeOnMainThread(async () =>
+        // Cancel any banner already fading
+        _bannerCts?.Cancel();
+        _bannerCts = new CancellationTokenSource();
+        var cts = _bannerCts;
+
+        _achievementBannerLabel.Text = name;
+        _achievementBanner.Opacity = 1;
+        _achievementBanner.IsVisible = true;
+
+        try
         {
-            // Cancel any banner already fading
-            _bannerCts?.Cancel();
-            _bannerCts = new CancellationTokenSource();
-            var cts = _bannerCts;
-
-            _achievementBannerLabel.Text = name;
-            _achievementBanner.Opacity = 1;
-            _achievementBanner.IsVisible = true;
-
-            try
-            {
-                await Task.Delay(2000, cts.Token);
-                await _achievementBanner.FadeToAsync(0, 600, Easing.CubicOut, cts);
-                _achievementBanner.IsVisible = false;
-            }
-            catch (OperationCanceledException)
-            {
-                // A new achievement interrupted — it will take over visibility
-            }
-        });
+            await Task.Delay(2000, cts.Token);
+            await _achievementBanner.FadeToAsync(0, 600, Easing.CubicOut, cts);
+            _achievementBanner.IsVisible = false;
+        }
+        catch (OperationCanceledException)
+        {
+            // A new achievement interrupted  
+        }
     }
 
     private void InitAchievements()
     {
-        _achievementEngine = new AchievementEngine();
+        _achievementEngine = new Achievements();
 
         // Local helper keeps Name in one place and wires the banner automatically
         void Register(NoteSequenceEventKind trigger, string name, Action visualAction)
         {
-            _achievementEngine.Register(new AchievementDefinition
+            _achievementEngine.Register(new Achievement
             {
                 Trigger = trigger,
                 Name = name,
@@ -654,15 +651,13 @@ public partial class AudioPage
         Register(NoteSequenceEventKind.FourNoteRunAscending, "Going Up!",
             () =>
             {
-                //_mainStack.EnableConfetti(true);
-                //LauchTimerStopEffect(2);
+
             });
 
         Register(NoteSequenceEventKind.FourNoteRunDescending, "Scale Down!",
             () =>
             {
-                //_mainStack.EnableConfetti(true);
-                //LauchTimerStopEffect(2);
+
             });
 
         Register(NoteSequenceEventKind.SevenConsecutiveNotes, "7-Note Streak!",
@@ -675,71 +670,29 @@ public partial class AudioPage
         Register(NoteSequenceEventKind.FourteenConsecutiveNotes, "Perfect Streak!",
             () =>
             {
-                //_mainStack.EnableConfetti(true);
-                //LauchTimerStopEffect(6);
-                TriggerCelebration();
+                PlayAchievementEffect();
             });
     }
 
     /// <summary>
-    /// Plays a celebration shader over the background image.
-    /// Uncomment one ShaderSource to compare variants:
-    ///   celebrate_starburst            — golden rays + sparkles               (2500 ms)
-    ///   celebrate_waves                — rainbow concentric rings              (3000 ms)
-    ///   celebrate_confetti             — tumbling rectangular confetti (rain)  (3500 ms)
-    ///   celebrate_confetti_burst       — confetti pops radially from center    (3500 ms)
-    ///   celebrate_confetti_cannon      — two corner cannons, streams cross     (3500 ms)
-    ///   celebrate_confetti_streamers   — long ribbons flutter as they fall     (3500 ms)
-    ///   celebrate_fireworks            — 4 sequential colored bursts           (3500 ms)
-    ///   celebrate_fireworks_launch     — rockets with comet trails, then burst (4000 ms)
-    ///   celebrate_fireworks_bloom      — 3 big chrysanthemum blooms            (4000 ms)
-    ///   celebrate_fireworks_glitter    — 5 dense blinking glitter bursts       (3500 ms)
-    ///   celebrate_aurora               — chromatic aurora curtains              (3000 ms)
-    ///   celebrate_stars                — twinkling star rain                    (3500 ms)
+    /// Plays an animated shader 
     /// </summary>
-    public void TriggerCelebration()
+    public void PlayAchievementEffect()
     {
         if (_background == null)
             return;
 
-        var fx = new CelebrationEffect
+        var fx = new AchievementEffect
         {
-            UseContext = true,
-            UseBackground = PostRendererEffectUseBackgroud.Never,
-            BlendMode = SKBlendMode.Plus,
-            ShaderSource = @"Shaders\celebrate_starburst.sksl",
-            //DurationMs = 2500,
-            //ShaderSource = @"Shaders\celebrate_waves.sksl",
-            Center = new SKPoint(0.5f, 0.33f),
-            DurationMs = 5000,
-            //ShaderSource = @"Shaders\celebrate_confetti.sksl",
-            //DurationMs = 3500,
-            //ShaderSource = @"Shaders\celebrate_confetti_burst.sksl",
-            //DurationMs = 3500,
-            //ShaderSource = @"Shaders\celebrate_fireworks.sksl",
-            //DurationMs = 3500,
-            //ShaderSource = @"Shaders\celebrate_fireworks_launch.sksl",
-            //DurationMs = 4000,
-            //ShaderSource = @"Shaders\celebrate_fireworks_bloom.sksl",
-            //DurationMs = 4000,
-            //ShaderSource = @"Shaders\celebrate_fireworks_glitter.sksl",
-            //DurationMs = 3500,
-            //ShaderSource = @"Shaders\celebrate_aurora.sksl",
-            //DurationMs = 3000,
-            //ShaderSource = @"Shaders\celebrate_stars.sksl",
-            //DurationMs = 3500,
-            //Center = new SKPoint(0.5f, 0.33f), // adjust origin of radial effects
         };
 
         fx.Completed += (s, e) =>
         {
-            _mainStack.VisualEffects.Remove(fx);
-            _mainStack.DisposeObject(fx);
-            System.Diagnostics.Debug.WriteLine($"Stopped effect {fx.ShaderSource}");
+            _background.VisualEffects.Remove(fx);
+            _background.DisposeObject(fx); //need to dispose manually
         };
 
-        _mainStack.VisualEffects.Add(fx);
-        System.Diagnostics.Debug.WriteLine($"Started effect {fx.ShaderSource}");
+        _background.VisualEffects.Add(fx);
         fx.Play();
     }
 

@@ -1,5 +1,5 @@
 
-public class ConfettiSystem
+public class Confetti
 {
     public class ConfettiPiece
     {
@@ -20,6 +20,7 @@ public class ConfettiSystem
     private SKPaint _paint;
 
     private long _timeBaseNanos;
+    private long _lastFrameTimeNanos;
     private bool _initialized;
 
     // Config
@@ -42,9 +43,10 @@ public class ConfettiSystem
     public void ResetSpawnTimer()
     {
         _initialized = false;
+        _lastFrameTimeNanos = 0;
     }
 
-    public ConfettiSystem()
+    public Confetti()
     {
         _colors = new[]
         {
@@ -53,7 +55,7 @@ public class ConfettiSystem
         };
     }
 
-    public ConfettiSystem(SKColor[] colors)
+    public Confetti(SKColor[] colors)
     {
         _colors = colors ?? throw new ArgumentNullException(nameof(colors));
         if (_colors.Length == 0)
@@ -113,8 +115,10 @@ public class ConfettiSystem
         // Early exit if still nothing
         if (_pieces.Count == 0) return;
 
-        float deltaSec = (frameTimeNanos - _timeBaseNanos) / 1_000_000_000f;
-        if (deltaSec < 0 || deltaSec > 0.5f) deltaSec = 0.016f;
+        // Real frame delta — FPS-independent physics
+        long frameDeltaNanos = _lastFrameTimeNanos > 0 ? frameTimeNanos - _lastFrameTimeNanos : 16_000_000L;
+        float frameDeltaSec = frameDeltaNanos / 1_000_000_000f;
+        if (frameDeltaSec <= 0f || frameDeltaSec > 0.25f) frameDeltaSec = 0.016f;
 
         _paint ??= new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
 
@@ -148,18 +152,7 @@ public class ConfettiSystem
                 continue;
             }
 
-            // Per-particle delta
-            long prevFrameApproxNanos = frameTimeNanos - 16_000_000L;
-            long prevAgeNanos = Math.Max(0, prevFrameApproxNanos - p.BirthTimeNanos);
-
-            float particleDeltaSec = (ageNanos - prevAgeNanos) / 1_000_000_000f;
-
-            if (particleDeltaSec <= 0 || particleDeltaSec > 0.1f)
-            {
-                particleDeltaSec = 0.016f;
-            }
-
-            particleDeltaSec *= scale;
+            float particleDeltaSec = frameDeltaSec * scale;
 
             float drag = (float)Math.Pow(AirResistance, particleDeltaSec * 60f);
 
@@ -196,6 +189,8 @@ public class ConfettiSystem
         }
 
         //canvas.Restore();
+
+        _lastFrameTimeNanos = frameTimeNanos;
     }
 
     //  Public spawning methods, call at will

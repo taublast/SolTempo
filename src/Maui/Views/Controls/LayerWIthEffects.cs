@@ -5,7 +5,7 @@ namespace SolTempo.UI;
 /// </summary>
 public class LayerWIthEffects : SkiaLayer
 {
-    private ConfettiSystem _confetti = new ();
+    private Confetti _confetti = new ();
 
     bool _isConfettiActive;
 

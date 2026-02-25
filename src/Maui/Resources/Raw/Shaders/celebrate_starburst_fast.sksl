@@ -1,4 +1,5 @@
-// Celebration: Golden Starburst + Shimmer
+// Celebration: Golden Starburst + Shimmer (FAST VARIANT)
+// Optimized for mobile/Android performance.
 // Radial golden rays burst from center, white sparkles scatter across screen.
 // uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
 
@@ -38,10 +39,18 @@ half4 main(float2 fragCoord) {
     float envelope = burstIn * fadeOut;
 
     // === STARBURST RAYS ===
-    // 12 main rays
-    float rays = pow(abs(cos(angle * 6.0)), 8.0);
-    // 24 thin secondary rays (less intense)
-    rays += pow(abs(cos(angle * 12.0)), 18.0) * 0.30;
+    // Fast pow approximations instead of pow()
+    float c6 = cos(angle * 6.0);
+    float r6 = c6 * c6;
+    r6 *= r6; // ^4
+    r6 *= r6; // ^8
+    float rays = r6;
+
+    float c12 = cos(angle * 12.0);
+    float r12 = c12 * c12;
+    r12 *= r12; // ^4
+    r12 *= r12; // ^16 (close enough to original 18.0)
+    rays += r12 * 0.30;
 
     // Rays fade toward outer edge
     float rayReach = 0.75;
@@ -55,39 +64,46 @@ half4 main(float2 fragCoord) {
     float outerGlow  = exp(-dist *  7.0) * 2.8;
     float innerCore  = exp(-dist * 22.0) * 5.5;
 
-    // === SPARKLES (screen-wide shimmer) ===
-    float sparkle          = 0.0;
-    const float numSparks  = 24.0;
-
+    // === SPARKLES (Fast Grid Approach) ===
+    float sparkle = 0.0;
+    
     // Sparkles only active during sustain phase
     float sparkEnv = smoothstep(0.20, 0.38, progress)
                    * (1.0 - smoothstep(0.68, 0.95, progress));
 
-    for (float i = 0.0; i < numSparks; i += 1.0) {
-        // Fixed random positions spread across screen
-        float2 sPos = float2(
-            hash2d(float2(i, 1.0)),
-            hash2d(float2(i, 9.0))
-        );
-        // Keep away from very edges
-        sPos = sPos * 0.82 + 0.09;
-
-        float2 sd = uv - sPos;
-        sd.x *= aspect;
-        float sdist = length(sd);
-
-        float sparkSize = 0.005 + hash2d(float2(i, 3.0)) * 0.007;
-
-        // Each sparkle blinks at its own frequency & phase
-        float freq  = 2.5 + hash2d(float2(i, 23.0)) * 3.0;
-        float phase = hash2d(float2(i, 17.0)) * TAU;
-        float blink = pow(max(0.0, sin(iTime * freq + phase)), 7.0);
-
-        // Point-light falloff
-        float s = clamp(sparkSize * sparkSize / (sdist * sdist + 0.0001), 0.0, 1.0);
-
-        sparkle += s * blink * sparkEnv;
+    if (sparkEnv > 0.0) {
+        // Create a grid based on screen coordinates to avoid looping over all sparkles
+        float2 gridUv = screenCoord * 0.015; 
+        float2 gridId = floor(gridUv);
+        float2 gridF = fract(gridUv);
+        
+        float h1 = hash2d(gridId + 11.0);
+        
+        // Only ~40% of cells have a sparkle
+        if (h1 > 0.6) {
+            float h2 = hash2d(gridId + 19.0);
+            // Keep sparkle away from cell edges to avoid clipping artifacts
+            float2 sPos = float2(0.5) + (float2(h1, h2) - 0.5) * 0.6; 
+            
+            float2 sd = gridF - sPos;
+            float sdistSq = dot(sd, sd);
+            
+            float sparkSizeSq = 0.005 + hash2d(gridId + 13.0) * 0.01;
+            
+            float freq = 2.5 + hash2d(gridId + 23.0) * 3.0;
+            float phase = hash2d(gridId + 17.0) * TAU;
+            
+            // Fast blink approximation
+            float blink = max(0.0, sin(iTime * freq + phase));
+            blink *= blink; // ^2
+            blink *= blink; // ^4
+            
+            // Fast point-light falloff with edge fade
+            float s = max(0.0, sparkSizeSq / (sdistSq + 0.0001) - 0.05);
+            sparkle += clamp(s, 0.0, 1.0) * blink;
+        }
     }
+    sparkle *= sparkEnv;
 
     // === COLORS ===
     half3 gold       = half3(1.00, 0.82, 0.00);

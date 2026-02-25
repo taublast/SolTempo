@@ -3,8 +3,9 @@ using DrawnUi.Draw;
 namespace SolTempo.Effects;
 
 /// <summary>
-/// Single-texture shader transition effect. Hides the control (progress 0→0.5),
-/// fires <see cref="Midpoint"/> so you can swap content, then reveals it (0.5→1).
+/// Contrary to two-textures transition effects this one is a
+/// single-texture shader effect.
+/// At progress 0 you set texture of the old view, at 0.5 set the new view as texture.
 ///
 /// Usage:
 ///   var fx = new TransitionEffect { ShaderSource = @"Shaders\transition_iris.sksl" };

@@ -1,0 +1,136 @@
+// Celebration: Golden Starburst + Shimmer (ULTRA FAST VARIANT)
+// Highly optimized for low-end mobile/Android performance.
+// Radial golden rays burst from center, white sparkles scatter across screen.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+uniform shader iImage1;
+
+const float TAU = 6.28318530718;
+
+// Ultra-fast hash using dot product and fract
+float hash2d(float2 p) {
+    return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+half4 main(float2 fragCoord) {
+    float2 screenCoord = fragCoord - iOffset;
+    float2 renderingScale = iImageResolution.xy / iResolution.xy;
+    float2 inputCoord = screenCoord * renderingScale;
+
+    float2 uv = screenCoord / iResolution.xy;
+    float aspect = iResolution.x / iResolution.y;
+
+    // Center driven by iCenter uniform (default 0.5, 0.44)
+    float2 centered = uv - iCenter;
+    centered.x *= aspect;
+
+    // Use dot product for squared distance (faster than length)
+    float distSq = dot(centered, centered);
+    float dist = sqrt(distSq); // Still need one sqrt for linear falloffs
+    
+    // Fast atan approximation or just use raw coordinates for rays
+    // Instead of atan, we can use the normalized coordinates directly to generate rays
+    float2 normDir = centered / (dist + 0.0001);
+    
+    // === ENVELOPE ===
+    // Simplified envelope using linear ramps instead of smoothstep where possible
+    float burstIn = clamp(progress * 5.55, 0.0, 1.0); // 1.0 / 0.18 = 5.55
+    float fadeOut = clamp((1.0 - progress) * 3.33, 0.0, 1.0); // 1.0 / 0.3 = 3.33
+    float envelope = burstIn * fadeOut;
+
+    // === STARBURST RAYS ===
+    // Generate rays using a combination of sine waves on the normalized direction
+    // This avoids atan() entirely
+    float anglePhase = normDir.x * 3.0 + normDir.y * 4.0; // Fake angle
+    
+    // Create a star pattern using absolute values and dot products
+    // 8-point star base
+    float star = abs(normDir.x) + abs(normDir.y);
+    float star2 = abs(normDir.x * 0.707 + normDir.y * 0.707) + abs(normDir.x * -0.707 + normDir.y * 0.707);
+    
+    // Combine and sharpen
+    float rays = max(star, star2);
+    rays = rays * rays; // ^2
+    rays = rays * rays; // ^4
+    rays = rays * rays; // ^8
+    
+    // Add some high-frequency noise/rays
+    float hfRays = sin(normDir.x * 20.0) * sin(normDir.y * 20.0);
+    rays += max(0.0, hfRays) * 0.3;
+
+    // Rays fade toward outer edge (linear fade is faster than smoothstep)
+    float rayFade = clamp(1.0 - dist * 1.33, 0.0, 1.0); // 1.0 / 0.75 = 1.33
+    rays *= rayFade;
+
+    // Rays expand outward at burst start
+    rays *= clamp(progress * 6.25, 0.0, 1.0); // 1.0 / 0.16 = 6.25
+
+    // === CENTER GLOW ===
+    // Use inverse squared distance for a very fast, natural-looking glow
+    // Avoids exp() entirely
+    float outerGlow = 0.05 / (distSq + 0.02);
+    float innerCore = 0.01 / (distSq + 0.002);
+
+    // === SPARKLES (Ultra-Fast Grid Approach) ===
+    float sparkle = 0.0;
+    
+    // Sparkles only active during sustain phase
+    float sparkEnv = clamp((progress - 0.2) * 5.55, 0.0, 1.0) * clamp((0.95 - progress) * 3.7, 0.0, 1.0);
+
+    if (sparkEnv > 0.0) {
+        // Coarser grid = fewer calculations
+        float2 gridUv = screenCoord * 0.01; 
+        float2 gridId = floor(gridUv);
+        
+        // Single hash for both existence and timing
+        float h = hash2d(gridId);
+        
+        // Only ~30% of cells have a sparkle
+        if (h > 0.7) {
+            float2 gridF = fract(gridUv);
+            
+            // Fixed center for sparkles in the cell (faster than randomizing position)
+            float2 sd = gridF - float2(0.5);
+            float sdistSq = dot(sd, sd);
+            
+            // Fast blink based on time and the cell's hash
+            float blink = sin(iTime * (3.0 + h * 5.0) + h * TAU);
+            blink = max(0.0, blink);
+            blink *= blink; // ^2
+            
+            // Very simple falloff
+            float s = max(0.0, 0.02 / (sdistSq + 0.01) - 0.2);
+            sparkle += s * blink;
+        }
+    }
+    sparkle *= sparkEnv;
+
+    // === COLORS ===
+    half3 gold       = half3(1.00, 0.82, 0.00);
+    half3 brightGold = half3(1.00, 0.95, 0.50);
+    half3 white      = half3(1.00, 0.97, 0.88);
+
+    // Rays: brighter gold near center tips, deeper gold outward
+    half3 rayColor = mix(brightGold, gold, clamp(dist * 1.33, 0.0, 1.0)) * rays;
+
+    // Glow: white hot core blending to gold
+    half3 glowColor = gold * outerGlow + white * innerCore;
+
+    // Sparkles: cool white
+    half3 sparkColor = white * sparkle;
+
+    // Additive overlay
+    half3 celebration = (rayColor + glowColor + sparkColor) * envelope;
+    
+    half4 bgColor = iImage1.eval(inputCoord);
+    
+    half3 finalColor = bgColor.rgb + celebration;
+    return half4(clamp(finalColor, 0.0, 1.0), bgColor.a);
+}

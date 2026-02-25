@@ -1,0 +1,116 @@
+// Celebration: Golden Nova / Implosion-Explosion (ULTRA FAST)
+// A fast, high-impact "WOW" achievement effect.
+// Energy gathers to the center, then violently explodes outward in a golden shockwave.
+// uniform float progress  (0.0 = start, 1.0 = end, driven externally by animator)
+
+uniform float4 iMouse;
+uniform float  iTime;
+uniform float2 iResolution;
+uniform float2 iImageResolution;
+uniform float2 iOffset;
+uniform float  progress;
+uniform float2 iCenter;
+uniform shader iImage1;
+
+const float TAU = 6.28318530718;
+
+half4 main(float2 fragCoord) {
+    float2 screenCoord = fragCoord - iOffset;
+    float2 renderingScale = iImageResolution.xy / iResolution.xy;
+    float2 inputCoord = screenCoord * renderingScale;
+
+    float2 uv = screenCoord / iResolution.xy;
+    float aspect = iResolution.x / iResolution.y;
+
+    // Center driven by iCenter uniform (default 0.5, 0.44)
+    float2 centered = uv - iCenter;
+    centered.x *= aspect;
+
+    float distSq = dot(centered, centered);
+    float dist = sqrt(distSq);
+    
+    // === TIMING PHASES ===
+    // Phase 1: Implosion (0.0 to 0.3) - Energy gathers
+    float implosion = clamp(progress * 3.33, 0.0, 1.0);
+    
+    // Phase 2: Explosion (0.3 to 1.0) - Shockwave bursts out
+    float explosion = clamp((progress - 0.3) * 1.42, 0.0, 1.0);
+    
+    // Overall fade out at the very end
+    float fadeOut = clamp((1.0 - progress) * 5.0, 0.0, 1.0);
+
+    // === IMPLOSION (Gathering Energy) ===
+    // Particles/streaks rushing inward
+    float gather = 0.0;
+    if (implosion > 0.0 && implosion < 1.0) {
+        // Fast fake angle using normalized coordinates
+        float2 normDir = centered / (dist + 0.0001);
+        
+        // Create streaks based on angle
+        float angleNoise = sin(normDir.x * 15.0) * cos(normDir.y * 15.0);
+        
+        // Streaks move inward over time
+        float streakPos = fract(dist * 5.0 - implosion * 10.0);
+        
+        // Only show streaks near the center as they gather
+        float streakMask = clamp(1.0 - dist * 2.0, 0.0, 1.0);
+        
+        gather = max(0.0, angleNoise) * streakPos * streakMask * implosion;
+    }
+
+    // === EXPLOSION (The Nova Burst) ===
+    float nova = 0.0;
+    float shockwave = 0.0;
+    
+    if (explosion > 0.0) {
+        // 1. The Core Flash (very bright, fades quickly)
+        float coreFlash = 0.02 / (distSq + 0.005);
+        coreFlash *= clamp(1.0 - explosion * 3.0, 0.0, 1.0); // Fades out by progress 0.6
+        
+        // 2. The Expanding Shockwave Ring
+        // Radius grows non-linearly (fast then slow)
+        float radius = 1.0 - pow(1.0 - explosion, 3.0); 
+        radius *= 1.5; // Max size
+        
+        // Ring thickness gets thinner as it expands
+        float thickness = 0.1 * (1.0 - explosion);
+        
+        // Fast ring calculation
+        float ringDist = abs(dist - radius);
+        shockwave = max(0.0, 1.0 - ringDist / (thickness + 0.001));
+        shockwave *= shockwave; // Sharpen the ring
+        
+        // Add some "plasma" texture to the ring
+        float2 normDir = centered / (dist + 0.0001);
+        float plasma = sin(normDir.x * 20.0 + iTime * 10.0) * cos(normDir.y * 20.0 - iTime * 10.0);
+        shockwave *= 1.0 + max(0.0, plasma) * 0.5;
+        
+        // Fade ring out as it gets huge
+        shockwave *= clamp(1.0 - explosion, 0.0, 1.0);
+        
+        nova = coreFlash + shockwave;
+    }
+
+    // === COLORS ===
+    half3 gold       = half3(1.00, 0.85, 0.20);
+    half3 brightGold = half3(1.00, 0.95, 0.60);
+    half3 white      = half3(1.00, 0.98, 0.90);
+    half3 deepOrange = half3(1.00, 0.40, 0.00);
+    
+    // Implosion is deep orange/gold
+    half3 gatherColor = mix(deepOrange, gold, implosion) * gather;
+    
+    // Explosion is bright white/gold fading to deep orange
+    half3 novaColor = mix(white, brightGold, explosion) * nova;
+    
+    // Combine effects
+    half3 finalEffect = (gatherColor + novaColor) * fadeOut;
+    
+    // Sample background
+    half4 bgColor = iImage1.eval(inputCoord);
+    
+    // Additive blend the final effect over the background
+    half3 finalColor = bgColor.rgb + finalEffect;
+    
+    return half4(clamp(finalColor, 0.0, 1.0), bgColor.a);
+}
