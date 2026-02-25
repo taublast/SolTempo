@@ -651,18 +651,18 @@ public partial class AudioPage
             });
         }
 
-        Register(NoteSequenceEventKind.ThreeNoteRunAscending, "Going Up!",
+        Register(NoteSequenceEventKind.FourNoteRunAscending, "Going Up!",
             () =>
             {
-                _mainStack.EnableConfetti(true);
-                LauchTimerStopEffect(2);
+                //_mainStack.EnableConfetti(true);
+                //LauchTimerStopEffect(2);
             });
 
-        Register(NoteSequenceEventKind.ThreeNoteRunDescending, "Scale Down!",
+        Register(NoteSequenceEventKind.FourNoteRunDescending, "Scale Down!",
             () =>
             {
-                _mainStack.EnableConfetti(true);
-                LauchTimerStopEffect(2);
+                //_mainStack.EnableConfetti(true);
+                //LauchTimerStopEffect(2);
             });
 
         Register(NoteSequenceEventKind.SevenConsecutiveNotes, "7-Note Streak!",
@@ -675,8 +675,8 @@ public partial class AudioPage
         Register(NoteSequenceEventKind.FourteenConsecutiveNotes, "Perfect Streak!",
             () =>
             {
-                _mainStack.EnableConfetti(true);
-                LauchTimerStopEffect(6);
+                //_mainStack.EnableConfetti(true);
+                //LauchTimerStopEffect(6);
                 TriggerCelebration();
             });
     }

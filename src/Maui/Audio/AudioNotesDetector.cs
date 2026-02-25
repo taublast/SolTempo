@@ -8,8 +8,8 @@ namespace SolTempo.Audio
 
     public enum NoteSequenceEventKind
     {
-        ThreeNoteRunAscending,
-        ThreeNoteRunDescending,
+        FourNoteRunAscending,
+        FourNoteRunDescending,
         SevenConsecutiveNotes,
         FourteenConsecutiveNotes,
     }
@@ -269,11 +269,11 @@ namespace SolTempo.Audio
 
         // Note Vote Buffer — rolling majority vote over a TIME-BASED window.
         // Target window = VoteWindowMs of real audio regardless of scan rate.
-        // PC (6ms scans) → ~10 slots; mobile (23ms chunks) → ~3 slots — both cover ~60ms.
-        private const float VoteWindowMs = 60f;  // target history in wall-clock ms
+        // PC (6ms scans) → ~25 slots; mobile (23ms chunks) → ~7 slots — both cover ~150ms.
+        private const float VoteWindowMs = 150f;  // target history in wall-clock ms (large enough to absorb vocal vibrato)
         private const float VoteThresholdRatio = 0.50f; // fraction of window needed to confirm a note (from silence/unknown)
-        private const float VoteChangeRatio    = 0.70f; // fraction of window needed to CHANGE an already-confirmed note (hysteresis)
-        private const int MaxVoteWindow = 32;  // pre-alloc ceiling
+        private const float VoteChangeRatio    = 0.75f; // fraction of window needed to CHANGE an already-confirmed note (hysteresis)
+        private const int MaxVoteWindow = 128;  // pre-alloc ceiling
         private int _voteWindowScans = 5;      // recomputed from actual scan interval
         private int _voteThreshold = 3;        // recomputed: confirm threshold
         private int _voteChangeThreshold = 4;  // recomputed: change threshold (higher — hysteresis)
@@ -657,7 +657,7 @@ namespace SolTempo.Audio
                 float confidence = meanAmdf > 0.0001f ? 1.0f - (minVal / meanAmdf) : 0f;
                 if (confidence < 0.35f)
                 {
-                    Debug.WriteLine($"Confidence {confidence:F2}");
+                    //Debug.WriteLine($"Confidence {confidence:F2}");
                     return; // Signal too noisy — keep last confirmed note on screen, don't add bad votes
                 }
             }
@@ -951,7 +951,7 @@ namespace SolTempo.Audio
 
         /// <summary>
         /// Tracks directional note runs:
-        ///   ThreeNoteRun  — exactly 3 consecutive steps in one direction (fires once per run start)
+        ///   FourNoteRun   — exactly 4 consecutive steps in one direction (fires once per run start)
         ///   Seven         — 7 consecutive steps in one direction
         ///   Fourteen      — two consecutive seven-runs back to back (any direction combo)
         ///
@@ -963,7 +963,7 @@ namespace SolTempo.Audio
             private readonly Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> _raiseSequence;
 
             // Rolling note buffer for span payloads sent to callbacks
-            private const int Capacity = 16;
+            private const int Capacity = 32;
             private readonly int[] _midiNotes = new int[Capacity];
             private readonly char[] _letters = new char[Capacity];
             private int _count;
@@ -972,7 +972,9 @@ namespace SolTempo.Audio
             private int _runLength;           // notes in current directional run (1 = seed, 7 = complete)
             private int _runDir;              // +1 ascending, -1 descending, 0 = not yet determined
             private char _lastLetter;         // last accepted natural letter
-            private int _completedRunsInRow;  // how many consecutive 7-runs have finished
+            private int _totalConsecutive;    // total consecutive notes across direction changes
+            private bool _fired4;             // whether 4-note streak fired in current chain
+            private bool _fired7;             // whether 7-note streak fired in current chain
 
             public NoteSequenceTracker(Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> callback)
             {
@@ -984,7 +986,9 @@ namespace SolTempo.Audio
                 _runLength = 0;
                 _runDir = 0;
                 _lastLetter = '\0';
-                _completedRunsInRow = 0;
+                _totalConsecutive = 0;
+                _fired4 = false;
+                _fired7 = false;
                 Array.Clear(_midiNotes, 0, _midiNotes.Length);
                 Array.Clear(_letters, 0, _letters.Length);
                 _count = 0;
@@ -1004,6 +1008,7 @@ namespace SolTempo.Audio
                     _lastLetter = naturalLetter;
                     _runLength = 1;
                     _runDir = 0;
+                    _totalConsecutive = 1;
                     return;
                 }
 
@@ -1020,9 +1025,13 @@ namespace SolTempo.Audio
                     // Non-consecutive step — break the run entirely
                     _runLength = 1;
                     _runDir = 0;
-                    _completedRunsInRow = 0;
+                    _totalConsecutive = 1;
+                    _fired4 = false;
+                    _fired7 = false;
                     return;
                 }
+
+                _totalConsecutive++;
 
                 if (_runDir == 0)
                 {
@@ -1037,49 +1046,49 @@ namespace SolTempo.Audio
                 }
                 else
                 {
-                    // Direction reversed before completing 7 — the streak for Fourteen is broken
+                    // Direction reversed
                     _runLength = 2;
                     _runDir = dir;
-                    _completedRunsInRow = 0;
                 }
 
                 // — Fire events —
 
-                if (_runLength == 3)
+                if (_runLength == 4 && !_fired4)
                 {
-                    // Fire once per run, exactly at the 3-step milestone
+                    _fired4 = true;
+                    // Fire once per run, exactly at the 4-step milestone
                     _raiseSequence(
-                        _runDir > 0 ? NoteSequenceEventKind.ThreeNoteRunAscending
-                                    : NoteSequenceEventKind.ThreeNoteRunDescending,
-                        3,
-                        _letters.AsSpan(_count - 3, 3),
-                        _midiNotes.AsSpan(_count - 3, 3));
+                        _runDir > 0 ? NoteSequenceEventKind.FourNoteRunAscending
+                                    : NoteSequenceEventKind.FourNoteRunDescending,
+                        4,
+                        _letters.AsSpan(_count - 4, 4),
+                        _midiNotes.AsSpan(_count - 4, 4));
                 }
 
-                if (_runLength == 7)
+                if (_runLength == 7 && !_fired7)
                 {
-                    _completedRunsInRow++;
-
+                    _fired7 = true;
                     _raiseSequence(
                         NoteSequenceEventKind.SevenConsecutiveNotes,
                         7,
                         _letters.AsSpan(_count - 7, 7),
                         _midiNotes.AsSpan(_count - 7, 7));
+                }
 
-                    if (_completedRunsInRow == 2)
-                    {
-                        // Two consecutive 7-runs — report all notes currently in buffer
-                        _raiseSequence(
-                            NoteSequenceEventKind.FourteenConsecutiveNotes,
-                            _count,
-                            _letters.AsSpan(0, _count),
-                            _midiNotes.AsSpan(0, _count));
-                        _completedRunsInRow = 0;
-                    }
-
-                    // The 7th note becomes the pivot / seed of the next run
+                if (_totalConsecutive == 14)
+                {
+                    _raiseSequence(
+                        NoteSequenceEventKind.FourteenConsecutiveNotes,
+                        14,
+                        _letters.AsSpan(_count - 14, 14),
+                        _midiNotes.AsSpan(_count - 14, 14));
+                    
+                    // Reset total consecutive after hitting 14 so it can trigger again later
+                    _totalConsecutive = 1;
                     _runLength = 1;
                     _runDir = 0;
+                    _fired4 = false;
+                    _fired7 = false;
                 }
             }
 
