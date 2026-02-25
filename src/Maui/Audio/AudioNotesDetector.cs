@@ -1,11 +1,18 @@
-﻿using System.Diagnostics;
-using AppoMobi.Maui.Gestures;
+﻿using AppoMobi.Maui.Gestures;
 using DrawnUi.Camera;
 using SolTempo.UI;
-using SkiaSharp.Views.Maui;
+using System.Diagnostics;
 
 namespace SolTempo.Audio
 {
+
+    public enum NoteSequenceEventKind
+    {
+        ThreeNoteRunAscending,
+        ThreeNoteRunDescending,
+        SevenConsecutiveNotes,
+        FourteenConsecutiveNotes,
+    }
 
 
     public class DebugLabel : SkiaLabel
@@ -44,9 +51,19 @@ namespace SolTempo.Audio
         private SkiaLabel _labelFrequency;
         private SkiaLabel _labelCents;
 
+        public Action<int, char, float> NoteChangedDelegate;
+        public Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> SequenceDetectedDelegate;
+
         public AudioNotesDetector()
         {
             UseCache = SkiaCacheType.Operations;
+
+            // Keep analysis parameters consistent across platforms.
+            // Some platforms may start at 44.1kHz and never trigger the sample-rate change path,
+            // so we compute effective buffer/scan sizes up-front.
+            UpdateSampleRateParams();
+
+            _sequenceTracker = new NoteSequenceTracker(RaiseSequenceDetectedFast);
 
             Children = new List<SkiaControl>
             {
@@ -94,6 +111,43 @@ namespace SolTempo.Audio
 
         }
 
+        private readonly NoteSequenceTracker _sequenceTracker;
+
+        private void RaiseNoteChanged(int midiNote, float frequencyHz)
+        {
+            int noteIndex = midiNote % 12;
+            if (noteIndex < 0) noteIndex += 12;
+
+            string noteName = NoteNames[noteIndex];
+            char naturalLetter = ToNaturalLetter(noteIndex);
+
+            // Non-alloc fast 
+            NoteChangedDelegate?.Invoke(midiNote, naturalLetter, frequencyHz);
+
+            _sequenceTracker.OnStableNote(midiNote, naturalLetter);
+        }
+
+ 
+        private void RaiseSequenceDetectedFast(NoteSequenceEventKind kind, int consecutiveNotes, ReadOnlySpan<char> lastLetters, ReadOnlySpan<int> lastMidiNotes)
+        {
+            SequenceDetectedDelegate?.Invoke(kind, consecutiveNotes, lastLetters, lastMidiNotes);
+        }
+
+        private static char ToNaturalLetter(int noteIndex)
+        {
+            return noteIndex switch
+            {
+                0 or 1 => 'C',
+                2 or 3 => 'D',
+                4 => 'E',
+                5 or 6 => 'F',
+                7 or 8 => 'G',
+                9 or 10 => 'A',
+                11 => 'B',
+                _ => '?'
+            };
+        }
+
         public override ISkiaGestureListener ProcessGestures(SkiaGesturesParameters args, GestureEventProcessingInfo apply)
         {
             if (args.Type == TouchActionResult.Tapped)
@@ -125,17 +179,17 @@ namespace SolTempo.Audio
 
             float cx = left + width / 2f;
 
-            float minDim = Math.Min(width, height);
+            float minDim = MathF.Min(width, height);
             float cyStaff = top + height * 0.72f;
             float cyGauge = top + height * 0.88f;
-            float textLarge = Math.Max(12f * scale, minDim * 0.44f);
-            float textSmall = Math.Max(10f * scale, minDim * 0.16f);
-            float textInfo = Math.Max(8f * scale, minDim * 0.10f);
+            float textLarge = MathF.Max(12f * scale, minDim * 0.44f);
+            float textSmall = MathF.Max(10f * scale, minDim * 0.16f);
+            float textInfo = MathF.Max(8f * scale, minDim * 0.10f);
 
- 
+
             // Always Draw Staff
             float staffWidth = width * 0.75f;
-            float lineSpacing = Math.Max(2f * scale, height * 0.035f);
+            float lineSpacing = MathF.Max(2f * scale, height * 0.035f);
             // Show notes if we have a detected note (even if signal isn't perfect)
             DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
 
@@ -154,7 +208,7 @@ namespace SolTempo.Audio
 
     float offset = (_displayCents / 50.0f) * (barWidth / 2);
     offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
-    _paintNeedle.Color = _displayColor.ToSKColor();
+    _paintNeedle.Color = _displayColorSK;
     float dotRadius = Math.Max(2f * scale, height * 0.03f);
     canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
     */
@@ -217,14 +271,23 @@ namespace SolTempo.Audio
         // Target window = VoteWindowMs of real audio regardless of scan rate.
         // PC (6ms scans) → ~10 slots; mobile (23ms chunks) → ~3 slots — both cover ~60ms.
         private const float VoteWindowMs = 60f;  // target history in wall-clock ms
-        private const float VoteThresholdRatio = 0.30f; // fraction of window needed to confirm
+        private const float VoteThresholdRatio = 0.50f; // fraction of window needed to confirm a note (from silence/unknown)
+        private const float VoteChangeRatio    = 0.70f; // fraction of window needed to CHANGE an already-confirmed note (hysteresis)
         private const int MaxVoteWindow = 32;  // pre-alloc ceiling
-        private int _voteWindowScans = 5;   // recomputed from actual scan interval
-        private int _voteThreshold = 3;   // recomputed from _voteWindowScans
+        private int _voteWindowScans = 5;      // recomputed from actual scan interval
+        private int _voteThreshold = 3;        // recomputed: confirm threshold
+        private int _voteChangeThreshold = 4;  // recomputed: change threshold (higher — hysteresis)
         private float _avgScanIntervalSamples = 265f; // EMA of measured scan intervals
         private int[] _noteVoteBuffer = new int[MaxVoteWindow];
         private int _voteBufferHead = 0;
-        private System.Collections.Generic.List<float> _centsBuffer = new System.Collections.Generic.List<float>();
+
+        // Cents smoothing — circular buffer replaces List<float> + RemoveAt(0)
+        private static readonly int[] _diatonicOffsets = { 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6 };
+
+        private const int CentsMaxHistory = 5;
+        private readonly float[] _centsBuf = new float[CentsMaxHistory];
+        private int _centsHead = 0;
+        private int _centsCount = 0;
 
         // Smoothing for UI
         private float _smoothCents = 0;
@@ -235,9 +298,20 @@ namespace SolTempo.Audio
         private int _displayMidiNote = 0;
         private float _displayFrequency = 0;
         private float _displayCents = 0;
-        private Color _displayColor = Colors.Gray;
+        private Color   _displayColor   = Colors.Gray;
+        private SKColor _displayColorSK = SKColors.Gray;   // cached — avoids ToSKColor() per frame
         private bool _displayHasSignal = false;
         private int _swapRequested = 0;
+
+        // Pre-allocated colors — avoids Color.WithAlpha() allocation per frame
+        private static readonly Color _colorFreqOnGray   = Colors.Gray.WithAlpha(95);
+        private static readonly Color _colorFreqOffGray  = Colors.Gray.WithAlpha(50);
+        private static readonly Color _colorFreqOnWhite  = Colors.White.WithAlpha(95);
+        private static readonly Color _colorFreqOffWhite = Colors.White.WithAlpha(50);
+
+        // String caching — avoids $"" allocation every Render() frame when values unchanged
+        private float _lastRenderedFreq  = -1f;
+        private float _lastRenderedCents = float.NaN;
 
         private SKPaint _paintGauge;
         private SKPaint _paintNeedle;
@@ -322,7 +396,18 @@ namespace SolTempo.Audio
 
         private void UpdateSampleRateParams()
         {
-            _effectiveBufferSamples = Math.Min((int)(_sampleRate * (BufferMs / 1000f)), BufferSize);
+            // Desired time-based buffer length.
+            int desired = Math.Min((int)(_sampleRate * (BufferMs / 1000f)), BufferSize);
+
+            // AMDF needs enough history to cover the maximum lag for low notes plus an analysis window.
+            // If the user configured a very small BufferMs, clamp the internal buffer so detection
+            // doesn't break (e.g. windowSize becoming 0 on 48kHz).
+            int minFreq = VoiceMode ? 80 : 60;
+            int maxLag = _sampleRate / minFreq;
+            int targetWindow = (int)(_sampleRate * 0.020f); // ~20ms
+            int required = maxLag + targetWindow + 2;
+
+            _effectiveBufferSamples = Math.Min(Math.Max(desired, required), BufferSize);
             _scanIntervalSamples = Math.Max(64, (int)(_sampleRate * (ScanIntervalMs / 1000f)));
             _avgScanIntervalSamples = _scanIntervalSamples; // reset EMA on sample rate change
             RecalcVoteParams();
@@ -331,8 +416,9 @@ namespace SolTempo.Audio
         private void RecalcVoteParams()
         {
             float scanMs = _avgScanIntervalSamples * 1000f / _sampleRate;
-            _voteWindowScans = Math.Max(3, Math.Min(MaxVoteWindow, (int)Math.Ceiling(VoteWindowMs / scanMs)));
-            _voteThreshold = Math.Max(2, (int)Math.Ceiling(_voteWindowScans * VoteThresholdRatio));
+            _voteWindowScans     = Math.Max(3, Math.Min(MaxVoteWindow, (int)Math.Ceiling(VoteWindowMs / scanMs)));
+            _voteThreshold       = Math.Max(2, (int)Math.Ceiling(_voteWindowScans * VoteThresholdRatio));
+            _voteChangeThreshold = Math.Max(_voteThreshold + 1, (int)Math.Ceiling(_voteWindowScans * VoteChangeRatio));
         }
 
         public void Reset()
@@ -352,7 +438,7 @@ namespace SolTempo.Audio
 
             Array.Clear(_noteVoteBuffer, 0, _noteVoteBuffer.Length);
             _voteBufferHead = 0;
-            _centsBuffer?.Clear();
+            _centsHead = 0; _centsCount = 0;
             _smoothCents = 0;
 
             _displayNote = placeholder;
@@ -363,6 +449,8 @@ namespace SolTempo.Audio
             _displayColor = Colors.Gray;
             _displayHasSignal = false;
             _swapRequested = 0;
+
+            _sequenceTracker.Reset();
 
             Update();
         }
@@ -426,13 +514,14 @@ namespace SolTempo.Audio
                 // Color logic
                 if (_displayHasSignal)
                 {
-                    if (Math.Abs(_displayCents) < 10) _displayColor = Colors.Lime;
-                    else if (Math.Abs(_displayCents) < 25) _displayColor = Colors.Yellow;
-                    else _displayColor = Colors.Orange;
+                    float absCents = MathF.Abs(_displayCents);
+                    if (absCents < 10)      { _displayColor = Colors.Lime;     _displayColorSK = SKColors.Lime; }
+                    else if (absCents < 25) { _displayColor = Colors.Yellow;   _displayColorSK = SKColors.Yellow; }
+                    else                    { _displayColor = Colors.Orange;   _displayColorSK = SKColors.Orange; }
                 }
                 else
                 {
-                    _displayColor = Colors.DarkGray;
+                    _displayColor = Colors.DarkGray; _displayColorSK = SKColors.DarkGray;
                     // Keep showing last note in gray - don't clear
                     //_displayNote = placeholder;
                     //_displayNoteSolf = placeholder;
@@ -443,16 +532,7 @@ namespace SolTempo.Audio
                 _labelNote.Text = _displayNoteSolf;
 
                 // Draw Info
-                if (_displayHasSignal)
-                {
-                    _labelFrequency.TextColor = Colors.Gray.WithAlpha(95);
-                    //_paintGauge.Color = SKColors.Gray.WithAlpha(95);
-                }
-                else
-                {
-                    _labelFrequency.TextColor = Colors.Gray.WithAlpha(50);
-                    //_paintGauge.Color = SKColors.Gray.WithAlpha(50);
-                }
+                _labelFrequency.TextColor = _displayHasSignal ? _colorFreqOnGray : _colorFreqOffGray;
 
                 _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
 
@@ -480,7 +560,7 @@ namespace SolTempo.Audio
             int rmsWindow = Math.Min((int)(_sampleRate * 0.023f), bufLen / 2);
             float rms = 0;
             for (int i = bufLen - rmsWindow; i < bufLen; i++) rms += frame[i] * frame[i];
-            rms = (float)Math.Sqrt(rms / rmsWindow);
+            rms = MathF.Sqrt(rms / rmsWindow);
 
             // Adjust silence threshold based on gain setting
             float silenceThreshold = UseGain ? 0.02f : 0.01f;
@@ -494,7 +574,9 @@ namespace SolTempo.Audio
                 //_currentMidiNote = 0;
                 Array.Clear(_noteVoteBuffer, 0, _noteVoteBuffer.Length);
                 _voteBufferHead = 0;
-                _centsBuffer.Clear();
+                _centsHead = 0; _centsCount = 0;
+
+                //_sequenceTracker.Reset();
                 return;
             }
             HasSignal = true;
@@ -509,11 +591,28 @@ namespace SolTempo.Audio
             int minLag = _sampleRate / maxFreq;
             int maxLag = _sampleRate / minFreq;
 
-            if (maxLag >= bufLen) maxLag = bufLen - 1;
+            // Clamp lag/window to the available buffer.
+            // If the buffer is too short for the desired minFreq (large maxLag),
+            // we reduce maxLag so we still have a non-zero analysis window.
+            int targetWindow = Math.Min((int)(_sampleRate * 0.020f), bufLen - 2);
+            if (targetWindow <= 0)
+                return;
 
-            // USE NEWEST DATA — window size is time-based (~20ms) so AMDF always analyses
-            // the same duration of audio regardless of sample rate.
-            int windowSize = Math.Min((int)(_sampleRate * 0.020f), bufLen - maxLag - 1);
+            int minWindow = Math.Min(64, targetWindow);
+            int maxLagLimit = bufLen - minWindow - 1;
+            if (maxLagLimit <= 0)
+                return;
+
+            if (maxLag > maxLagLimit)
+                maxLag = maxLagLimit;
+
+            if (maxLag < minLag)
+                return;
+
+            // USE NEWEST DATA — window size is time-based (~20ms) when possible.
+            int windowSize = Math.Min(targetWindow, bufLen - maxLag - 1);
+            if (windowSize <= 0)
+                return;
             int analysisStart = bufLen - maxLag - windowSize;
 
             if (analysisStart < 0) analysisStart = 0;
@@ -531,7 +630,7 @@ namespace SolTempo.Audio
                 for (int i = 0; i < windowSize; i += 2)
                 {
                     int idx = analysisStart + i;
-                    diffSum += Math.Abs(frame[idx] - frame[idx + lag]);
+                    diffSum += MathF.Abs(frame[idx] - frame[idx + lag]);
                 }
 
                 amdf[lag] = diffSum;
@@ -557,7 +656,10 @@ namespace SolTempo.Audio
                 float meanAmdf = totalAmdf / (maxLag - minLag + 1);
                 float confidence = meanAmdf > 0.0001f ? 1.0f - (minVal / meanAmdf) : 0f;
                 if (confidence < 0.35f)
+                {
+                    Debug.WriteLine($"Confidence {confidence:F2}");
                     return; // Signal too noisy — keep last confirmed note on screen, don't add bad votes
+                }
             }
 
             if (bestLag > 0)
@@ -587,7 +689,7 @@ namespace SolTempo.Audio
                 float denominator = 2 * (y1 - 2 * y2 + y3);
                 float offset = 0;
 
-                if (Math.Abs(denominator) > 0.0001f)
+                if (MathF.Abs(denominator) > 0.0001f)
                 {
                     offset = (y1 - y3) / denominator;
                 }
@@ -621,12 +723,21 @@ namespace SolTempo.Audio
                     if (count > winnerCount) { winnerCount = count; winnerNote = candidate; }
                 }
 
-                if (winnerCount >= _voteThreshold && winnerNote > 0)
+                // Hysteresis: confirming a note from scratch needs VoteThresholdRatio (50%),
+                // but overriding an already-confirmed note needs VoteChangeRatio (70%).
+                // This absorbs voice trembles near a note boundary without slowing real transitions.
+                int requiredVotes = (_currentMidiNote != 0 && winnerNote != _currentMidiNote)
+                    ? _voteChangeThreshold
+                    : _voteThreshold;
+
+                if (winnerCount >= requiredVotes && winnerNote > 0)
                 {
+                    bool noteChanged = false;
                     if (_currentMidiNote != winnerNote)
                     {
                         _currentMidiNote = winnerNote;
-                        _centsBuffer.Clear();
+                        _centsHead = 0; _centsCount = 0;
+                        noteChanged = true;
                     }
 
                     int noteIndex = _currentMidiNote % 12;
@@ -656,20 +767,28 @@ namespace SolTempo.Audio
                     break;
                     }
 
+                    if (noteChanged)
+                    {
+                        RaiseNoteChanged(_currentMidiNote, _currentFrequency);
+                    }
+
                 }
 
                 // Calculate cents relative to the STABLE note (so needle shows true drift)
-                float targetFreq = 440.0f * (float)Math.Pow(2, (_currentMidiNote - 69) / 12.0f);
+                float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
                 if (targetFreq > 0)
                 {
-                    float rawCents = 1200 * (float)Math.Log2(_currentFrequency / targetFreq);
+                    float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
 
-                    _centsBuffer.Add(rawCents);
-                    if (_centsBuffer.Count > 5) _centsBuffer.RemoveAt(0);
+                    _centsBuf[_centsHead] = rawCents;
+                    _centsHead = (_centsHead + 1) % CentsMaxHistory;
+                    if (_centsCount < CentsMaxHistory) _centsCount++;
 
                     float sum = 0;
-                    foreach (var c in _centsBuffer) sum += c;
-                    _currentCents = sum / _centsBuffer.Count;
+                    int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
+                    for (int ci = 0; ci < _centsCount; ci++)
+                        sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
+                    _currentCents = sum / _centsCount;
                 }
             }
         }
@@ -706,25 +825,18 @@ namespace SolTempo.Audio
 
             // Always Draw Staff
             float staffWidth = width * 0.75f;
-            float lineSpacing = Math.Max(2f * scale, height * 0.035f);
+            float lineSpacing = MathF.Max(2f * scale, height * 0.035f);
             // Show notes if we have a detected note (even if signal isn't perfect)
             DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
 
             // Draw Info
-            if (_displayHasSignal)
-            {
-                _labelFrequency.TextColor  = Colors.White.WithAlpha(95);
-                //_paintGauge.Color = SKColors.Gray.WithAlpha(95);
-            }
-            else
-            {
-                _labelFrequency.TextColor = Colors.White.WithAlpha(50);
-                //_paintGauge.Color = SKColors.Gray.WithAlpha(50);
-            }
+            _labelFrequency.TextColor = _displayHasSignal ? _colorFreqOnWhite : _colorFreqOffWhite;
 
-            //_paintGauge.StrokeWidth = 6 * scale;
-
-            _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
+            if (_displayFrequency != _lastRenderedFreq)
+            {
+                _lastRenderedFreq = _displayFrequency;
+                _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
+            }
 
             // Gauge Background
             //float barWidth = width * 0.75f;
@@ -737,12 +849,16 @@ namespace SolTempo.Audio
             // Gauge Needle
             //float offset = (_displayCents / 50.0f) * (barWidth / 2);
             //offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
-            //_paintNeedle.Color = _displayColor.ToSKColor();
+            //_paintNeedle.Color = _displayColorSK;
             //float dotRadius = Math.Max(2f * scale, height * 0.03f);
             //canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
 
-            // Cents Text
-            _labelCents.Text = $"{_displayCents:+0;-0} cents";
+            // Cents Text — only reallocate string when value changes
+            if (_displayCents != _lastRenderedCents)
+            {
+                _lastRenderedCents = _displayCents;
+                _labelCents.Text = $"{_displayCents:+0;-0} cents";
+            }
 
             return false;
         }
@@ -765,7 +881,7 @@ namespace SolTempo.Audio
             if (midiNote <= 0) return;
 
             // Map MIDI to visual steps
-            int[] diatonicOffsets = { 0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6 };
+            var diatonicOffsets = _diatonicOffsets;
             int octave = (midiNote / 12) - 1;
             int noteInOctave = midiNote % 12;
             int absStep = octave * 7 + diatonicOffsets[noteInOctave];
@@ -801,11 +917,11 @@ namespace SolTempo.Audio
             }
 
             // Note Head
-            _paintNeedle.Color = _displayColor.ToSKColor();
+            _paintNeedle.Color = _displayColorSK;
             canvas.DrawOval(cx, noteY, 15 * scale, 11 * scale, _paintNeedle);
 
             // Stem
-            _paintGauge.Color = _displayColor.ToSKColor();
+            _paintGauge.Color = _displayColorSK;
             _paintGauge.StrokeWidth = 3 * scale;
             float stemHeight = 50 * scale;
             if (stepsFromCenter >= 0) // Stem Down (Left)
@@ -826,11 +942,179 @@ namespace SolTempo.Audio
                 }
 
                 _paintTextSmall.TextSize = 30 * scale;
-                _paintTextSmall.Color = _displayColor.ToSKColor();
+                _paintTextSmall.Color = _displayColorSK;
 
                 canvas.DrawText("#", cx - 22 * scale, noteY + 10 * scale, _paintTextSmall);
             }
             
+        }
+
+        /// <summary>
+        /// Tracks directional note runs:
+        ///   ThreeNoteRun  — exactly 3 consecutive steps in one direction (fires once per run start)
+        ///   Seven         — 7 consecutive steps in one direction
+        ///   Fourteen      — two consecutive seven-runs back to back (any direction combo)
+        ///
+        /// "Consecutive" means each step is exactly +1 or -1 in the natural letter scale
+        /// (A B C D E F G, wrapping). CDEDEDE is NOT consecutive — direction must be maintained.
+        /// </summary>
+        private sealed class NoteSequenceTracker
+        {
+            private readonly Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> _raiseSequence;
+
+            // Rolling note buffer for span payloads sent to callbacks
+            private const int Capacity = 16;
+            private readonly int[] _midiNotes = new int[Capacity];
+            private readonly char[] _letters = new char[Capacity];
+            private int _count;
+
+            // Run tracking
+            private int _runLength;           // notes in current directional run (1 = seed, 7 = complete)
+            private int _runDir;              // +1 ascending, -1 descending, 0 = not yet determined
+            private char _lastLetter;         // last accepted natural letter
+            private int _completedRunsInRow;  // how many consecutive 7-runs have finished
+
+            public NoteSequenceTracker(Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> callback)
+            {
+                _raiseSequence = callback;
+            }
+
+            public void Reset()
+            {
+                _runLength = 0;
+                _runDir = 0;
+                _lastLetter = '\0';
+                _completedRunsInRow = 0;
+                Array.Clear(_midiNotes, 0, _midiNotes.Length);
+                Array.Clear(_letters, 0, _letters.Length);
+                _count = 0;
+            }
+
+            public void OnStableNote(int midiNote, char naturalLetter)
+            {
+                // Ignore repeated natural letter (e.g. C# and C map to same letter)
+                if (_lastLetter == naturalLetter)
+                    return;
+
+                AppendCapped(midiNote, naturalLetter);
+
+                if (_lastLetter == '\0')
+                {
+                    // Very first note — just seed the run
+                    _lastLetter = naturalLetter;
+                    _runLength = 1;
+                    _runDir = 0;
+                    return;
+                }
+
+                // Determine step direction in the 7-letter cycle A B C D E F G
+                int stepMod = ((LetterIndex(naturalLetter) - LetterIndex(_lastLetter)) % 7 + 7) % 7;
+                int dir = stepMod == 1 ? +1   // one step ascending (wraps G→A)
+                        : stepMod == 6 ? -1   // one step descending (wraps A→G)
+                        : 0;                  // skip — not consecutive
+
+                _lastLetter = naturalLetter;
+
+                if (dir == 0)
+                {
+                    // Non-consecutive step — break the run entirely
+                    _runLength = 1;
+                    _runDir = 0;
+                    _completedRunsInRow = 0;
+                    return;
+                }
+
+                if (_runDir == 0)
+                {
+                    // First step: direction established, 2 notes in run
+                    _runDir = dir;
+                    _runLength = 2;
+                }
+                else if (_runDir == dir)
+                {
+                    // Same direction — continue
+                    _runLength++;
+                }
+                else
+                {
+                    // Direction reversed before completing 7 — the streak for Fourteen is broken
+                    _runLength = 2;
+                    _runDir = dir;
+                    _completedRunsInRow = 0;
+                }
+
+                // — Fire events —
+
+                if (_runLength == 3)
+                {
+                    // Fire once per run, exactly at the 3-step milestone
+                    _raiseSequence(
+                        _runDir > 0 ? NoteSequenceEventKind.ThreeNoteRunAscending
+                                    : NoteSequenceEventKind.ThreeNoteRunDescending,
+                        3,
+                        _letters.AsSpan(_count - 3, 3),
+                        _midiNotes.AsSpan(_count - 3, 3));
+                }
+
+                if (_runLength == 7)
+                {
+                    _completedRunsInRow++;
+
+                    _raiseSequence(
+                        NoteSequenceEventKind.SevenConsecutiveNotes,
+                        7,
+                        _letters.AsSpan(_count - 7, 7),
+                        _midiNotes.AsSpan(_count - 7, 7));
+
+                    if (_completedRunsInRow == 2)
+                    {
+                        // Two consecutive 7-runs — report all notes currently in buffer
+                        _raiseSequence(
+                            NoteSequenceEventKind.FourteenConsecutiveNotes,
+                            _count,
+                            _letters.AsSpan(0, _count),
+                            _midiNotes.AsSpan(0, _count));
+                        _completedRunsInRow = 0;
+                    }
+
+                    // The 7th note becomes the pivot / seed of the next run
+                    _runLength = 1;
+                    _runDir = 0;
+                }
+            }
+
+            private void AppendCapped(int midiNote, char naturalLetter)
+            {
+                if (_count < Capacity)
+                {
+                    _midiNotes[_count] = midiNote;
+                    _letters[_count] = naturalLetter;
+                    _count++;
+                    return;
+                }
+
+                // Shift left; constant size => trivial cost, zero GC
+                Array.Copy(_midiNotes, 1, _midiNotes, 0, Capacity - 1);
+                Array.Copy(_letters, 1, _letters, 0, Capacity - 1);
+                _midiNotes[Capacity - 1] = midiNote;
+                _letters[Capacity - 1] = naturalLetter;
+                // _count stays at Capacity
+            }
+
+            private static int LetterIndex(char letter)
+            {
+                return letter switch
+                {
+                    'A' => 0,
+                    'B' => 1,
+                    'C' => 2,
+                    'D' => 3,
+                    'E' => 4,
+                    'F' => 5,
+                    'G' => 6,
+                    _ => -1,
+                };
+            }
         }
 
     }

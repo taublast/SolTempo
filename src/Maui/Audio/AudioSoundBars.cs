@@ -56,6 +56,15 @@ namespace SolTempo.Audio
         private SKPaint _paintDot;
         private SKPaint _paintText;
 
+        // Pre-cached per-bar colors for Skin 1 — computed once in InitCoefficients
+        private readonly SKColor[] _barColors = new SKColor[BarCount];
+
+        // Pre-cached bar X positions — recomputed only when viewport dimensions change
+        private readonly float[] _barXBuf = new float[BarCount];
+        private float _cachedViewportWidth = -1f;
+        private float _cachedViewportLeft  = 0f;
+        private float _cachedBarWidth      = 0f;
+
         public void Reset()
         {
             Array.Clear(_barsFrontBuffer, 0, _barsFrontBuffer.Length);
@@ -79,23 +88,28 @@ namespace SolTempo.Audio
             // Logarithmic frequency mapping: 60Hz to 8000Hz
             float minFreq = 60f;
             float maxFreq = 8000f;
-            float logMin = (float)Math.Log(minFreq);
-            float logMax = (float)Math.Log(maxFreq);
+            float logMin = MathF.Log(minFreq);
+            float logMax = MathF.Log(maxFreq);
 
             for (int i = 0; i < BarCount; i++)
             {
                 float t = i / (float)(BarCount - 1);
-                float freq = (float)Math.Exp(logMin + t * (logMax - logMin));
+                float freq = MathF.Exp(logMin + t * (logMax - logMin));
                 _goertzelFreqs[i] = freq;
 
                 // Goertzel: k = round(N * freq / sampleRate)
                 // coeff = 2 * cos(2*pi*k/N)
                 float k = AnalysisSize * freq / sampleRate;
-                _goertzelCoeff[i] = 2f * (float)Math.Cos(2.0 * Math.PI * k / AnalysisSize);
+                _goertzelCoeff[i] = 2f * MathF.Cos(2f * MathF.PI * k / AnalysisSize);
 
                 // Higher frequency bins get more gain to compensate
                 // for natural spectral rolloff in music
                 _binGain[i] = 1.0f + t * 2.5f;
+
+                // Pre-cache Skin 1 hue color — avoids HSV trig every frame
+                float hue = t * 200f + 160f;
+                if (hue >= 360f) hue -= 360f;
+                _barColors[i] = SKColor.FromHsv(hue, 80, 100);
             }
 
             _coeffReady = true;
@@ -161,7 +175,7 @@ namespace SolTempo.Audio
                     float normalized = (power - cutoff) / (maxPower - cutoff);
                     // Square root curve: compresses range so mid-level bins
                     // appear tall while keeping proportions between ON bars
-                    target = (float)Math.Sqrt(normalized);
+                    target = MathF.Sqrt(normalized);
                 }
 
                 // Instant attack: jump up immediately. Release/decay is handled in Render()
@@ -224,9 +238,9 @@ namespace SolTempo.Audio
             long last = System.Threading.Interlocked.Exchange(ref _lastRenderTimestamp, now);
             float elapsedSec = last == 0
                 ? (1f / 60f)
-                : Math.Min((now - last) / (float)System.Diagnostics.Stopwatch.Frequency, 0.5f);
-            float releaseThisFrame = (float)Math.Pow(ReleaseCoeffPerSec, elapsedSec);
-            float peakDecayThisFrame = (float)Math.Pow(PeakDecayPerSec, elapsedSec);
+                : MathF.Min((now - last) / (float)System.Diagnostics.Stopwatch.Frequency, 0.5f);
+            float releaseThisFrame = MathF.Pow(ReleaseCoeffPerSec, elapsedSec);
+            float peakDecayThisFrame = MathF.Pow(PeakDecayPerSec, elapsedSec);
 
             bool dirty = false;
             for (int i = 0; i < BarCount; i++)
@@ -238,26 +252,36 @@ namespace SolTempo.Audio
                     dirty = true;
             }
 
-            var startX = left;
-            var bottomY = top + height;
-            var maxBarHeight = height;
-            var totalSlot = width / BarCount;
-            var barWidth = Math.Max(1f, totalSlot * 0.55f);
+            float bottomY = top + height;
+            float maxBarHeight = height;
+
+            // Recompute bar geometry only when viewport dimensions change
+            if (width != _cachedViewportWidth || left != _cachedViewportLeft)
+            {
+                _cachedViewportWidth = width;
+                _cachedViewportLeft  = left;
+                float totalSlot = width / BarCount;
+                _cachedBarWidth = MathF.Max(1f, totalSlot * 0.55f);
+                float xOffset = (totalSlot - _cachedBarWidth) / 2f;
+                for (int i = 0; i < BarCount; i++)
+                    _barXBuf[i] = left + i * totalSlot + xOffset;
+            }
+            float barWidth = _cachedBarWidth;
 
             if (Skin == 0)
             {
                 // Skin 0: White/gray bars with floating peak dots
                 for (int i = 0; i < BarCount; i++)
                 {
-                    var level = _barsFrontBuffer[i];
-                    var peakLevel = _peakHold[i];
-                    var x = startX + i * totalSlot + (totalSlot - barWidth) / 2;
+                    float level    = _barsFrontBuffer[i];
+                    float peakLevel = _peakHold[i];
+                    float x        = _barXBuf[i];
 
                     // Only draw bars that are actually ON
                     if (level > 0.01f)
                     {
-                        var barH = level * maxBarHeight;
-                        byte barAlpha = (byte)(140 + Math.Min(115, level * 200));
+                        float barH = level * maxBarHeight;
+                        byte barAlpha = (byte)(140 + MathF.Min(115f, level * 200f));
                         _paintBar.Color = new SKColor(220, 225, 235, barAlpha);
                         canvas.DrawRect(x, bottomY - barH, barWidth, barH, _paintBar);
                     }
@@ -265,8 +289,8 @@ namespace SolTempo.Audio
                     // Floating peak dot
                     if (ShowPeakDots && peakLevel > 0.03f)
                     {
-                        var dotY = bottomY - peakLevel * maxBarHeight;
-                        var dotH = 2f * scale;
+                        float dotY = bottomY - peakLevel * maxBarHeight;
+                        float dotH = 2f * scale;
                         _paintDot.Color = SKColors.White;
                         canvas.DrawRect(x, dotY - dotH, barWidth, dotH, _paintDot);
                     }
@@ -274,26 +298,24 @@ namespace SolTempo.Audio
             }
             else
             {
-                // Skin 1: Colored bars, hue based on frequency position
+                // Skin 1: Colored bars — hue pre-cached in _barColors, no per-frame HSV trig
                 for (int i = 0; i < BarCount; i++)
                 {
-                    var level = _barsFrontBuffer[i];
-                    var peakLevel = _peakHold[i];
-                    var x = startX + i * totalSlot + (totalSlot - barWidth) / 2;
+                    float level     = _barsFrontBuffer[i];
+                    float peakLevel = _peakHold[i];
+                    float x         = _barXBuf[i];
 
                     if (level > 0.01f)
                     {
-                        var barH = level * maxBarHeight;
-                        float hue = (i / (float)(BarCount - 1)) * 200 + 160; // blue->cyan->green
-                        if (hue >= 360) hue -= 360;
-                        _paintBar.Color = SKColor.FromHsv(hue, 80, 100);
+                        float barH = level * maxBarHeight;
+                        _paintBar.Color = _barColors[i];
                         canvas.DrawRect(x, bottomY - barH, barWidth, barH, _paintBar);
                     }
 
                     if (ShowPeakDots && peakLevel > 0.03f)
                     {
-                        var dotY = bottomY - peakLevel * maxBarHeight;
-                        var dotH = 2f * scale;
+                        float dotY = bottomY - peakLevel * maxBarHeight;
+                        float dotH = 2f * scale;
                         _paintDot.Color = SKColors.White;
                         canvas.DrawRect(x, dotY - dotH, barWidth, dotH, _paintDot);
                     }

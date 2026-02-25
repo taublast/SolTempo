@@ -6,6 +6,9 @@ namespace SolTempo.Effects;
 /// </summary>
 public class GlassBackdropEffect : SkiaShaderEffect
 {
+    private readonly float[] _uniformResolution = new float[2];
+    private readonly float[] _uniformGlassColor = new float[4];
+
     public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create(
         nameof(CornerRadius),
         typeof(float),
@@ -111,7 +114,9 @@ public class GlassBackdropEffect : SkiaShaderEffect
         // This makes renderingScale = iImageResolution / iResolution = actual screen density,
         // so the shader can convert iCornerRadius from points to pixels correctly.
         var scale = Parent?.RenderingScale ?? 1f;
-        uniforms["iResolution"] = new[] { destination.Width / scale, destination.Height / scale };
+        _uniformResolution[0] = destination.Width / scale;
+        _uniformResolution[1] = destination.Height / scale;
+        uniforms["iResolution"] = _uniformResolution;
 
         // Pass corner radius in points - shader converts to pixels via renderingScale
         uniforms["iCornerRadius"] = CornerRadius;
@@ -122,7 +127,9 @@ public class GlassBackdropEffect : SkiaShaderEffect
 
         // GlassColor: rgb = tint color, a = tint strength (0 = no tint, nothing changes)
         var c = GlassColor;
-        uniforms["iGlassColor"] = new[] { (float)c.Red, (float)c.Green, (float)c.Blue, (float)c.Alpha };
+        _uniformGlassColor[0] = (float)c.Red; _uniformGlassColor[1] = (float)c.Green;
+        _uniformGlassColor[2] = (float)c.Blue; _uniformGlassColor[3] = (float)c.Alpha;
+        uniforms["iGlassColor"] = _uniformGlassColor;
 
         return uniforms;
     }

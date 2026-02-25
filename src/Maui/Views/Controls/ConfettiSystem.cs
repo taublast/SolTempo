@@ -17,6 +17,7 @@ public class ConfettiSystem
     private readonly List<ConfettiPiece> _pieces = new();
     private readonly Random _rnd = new();
     private readonly SKColor[] _colors;
+    private SKPaint _paint;
 
     private long _timeBaseNanos;
     private bool _initialized;
@@ -29,6 +30,19 @@ public class ConfettiSystem
     public float MinLifetimeSec { get; set; } = 2.5f;
     public float MaxLifetimeSec { get; set; } = 5.5f;
     public float MaxRotationSpeedDegPerSec { get; set; } = 360f;
+
+    /// <summary>When false, no new pieces are spawned but existing ones fall and fade naturally.</summary>
+    public bool IsSpawning { get; set; } = true;
+    public bool HasPieces => _pieces.Count > 0;
+
+    /// <summary>
+    /// Resets the internal spawn timer so the next Enable causes an organic ramp-up
+    /// instead of an instant burst (the burst happens when elapsed time is huge vs spawn interval).
+    /// </summary>
+    public void ResetSpawnTimer()
+    {
+        _initialized = false;
+    }
 
     public ConfettiSystem()
     {
@@ -68,7 +82,7 @@ public class ConfettiSystem
 
         // 2. Add falling confetti from top – but not every frame!
         //    Adjust frequency as needed (e.g. every 0.2–0.5 seconds ≈ 12–30 pieces/sec)
-        if (_pieces.Count < 60)   // keep roughly 40–80 pieces on screen
+        if (IsSpawning && _pieces.Count < 60)   // keep roughly 40–80 pieces on screen
         {
             // How often to spawn new ones (tune this value)
             const float spawnIntervalSec = 0.08f; // ~12 new pieces per second
@@ -102,7 +116,7 @@ public class ConfettiSystem
         float deltaSec = (frameTimeNanos - _timeBaseNanos) / 1_000_000_000f;
         if (deltaSec < 0 || deltaSec > 0.5f) deltaSec = 0.016f;
 
-        var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
+        _paint ??= new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
 
         //canvas.Save();
         //canvas.ClipRect(drawArea);
@@ -163,7 +177,7 @@ public class ConfettiSystem
 
             p.Rotation += p.RotationSpeed * particleDeltaSec;
 
-            paint.Color = p.Color.WithAlpha((byte)(p.Alpha * 255));
+            _paint.Color = p.Color.WithAlpha((byte)(p.Alpha * 255));
 
             canvas.Save();
             canvas.Translate(p.Position.X, p.Position.Y);
@@ -175,7 +189,7 @@ public class ConfettiSystem
             if (p.Position.X + hw >= drawArea.Left && p.Position.X - hw <= drawArea.Right &&
                 p.Position.Y + hh >= drawArea.Top && p.Position.Y - hh <= drawArea.Bottom)
             {
-                canvas.DrawRect(-hw, -hh, p.Size.Width, p.Size.Height, paint);
+                canvas.DrawRect(-hw, -hh, p.Size.Width, p.Size.Height, _paint);
             }
 
             canvas.Restore();
@@ -252,4 +266,11 @@ public class ConfettiSystem
     }
 
     public void Clear() => _pieces.Clear();
+
+    public void Dispose()
+    {
+        _pieces.Clear();
+        _paint?.Dispose();
+        _paint = null;
+    }
 }

@@ -1,5 +1,7 @@
 using AppoMobi.Specials;
+using System.Diagnostics;
 using DrawnUi.Controls;
+using DrawnUi.Models;
 using DrawnUi.Views;
 using SolTempo.Audio;
 using SolTempo.Effects;
@@ -40,6 +42,11 @@ public partial class AudioPage
     private SettingsPopup _settingsPopup;
     private HelpPopup _helpPopup;
     private LayerWIthEffects _mainStack;
+
+    private AchievementEngine _achievementEngine;
+    private SkiaShape _achievementBanner;
+    private SkiaLabel _achievementBannerLabel;
+    private CancellationTokenSource _bannerCts;
 
     private object lockNav = new();
 
@@ -164,7 +171,6 @@ public partial class AudioPage
                             {
                                 new SkiaBackdrop()
                                 {
-                                    //UseCache = SkiaCacheType.Operations, //notice cache here
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
                                     Blur = 0,
@@ -293,7 +299,6 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
-
                                             ShaderSource = @"Shaders\glass.sksl",
 
                                             BlurStrength = 1.0f,
@@ -469,6 +474,29 @@ public partial class AudioPage
             {
                 _mainStack,
                 _previewOverlay,
+
+                // Achievement banner — floats above everything, fades out automatically
+                new SkiaShape()
+                {
+                    ZIndex = 200,
+                    IsVisible = false,
+                    CornerRadius = 24,
+                    BackgroundColor = Color.FromArgb("#EE000000"),
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center,
+                    Padding = new(32, 16),
+                    Children =
+                    {
+                        new SkiaLabel()
+                        {
+                            FontSize = 28,
+                            FontAttributes = FontAttributes.Bold,
+                            TextColor = Colors.White,
+                            HorizontalOptions = LayoutOptions.Center,
+                        }.Assign(out _achievementBannerLabel)
+                    }
+                }.Assign(out _achievementBanner),
+
 #if DEBUG
                 new SkiaLabelFps()
                 {
@@ -516,7 +544,141 @@ public partial class AudioPage
             AttachHardware(true);
         }
 
+        AttachNotesEvents();
+        InitAchievements();
+
         ToggleVisualizerMode(UserSettings.Current.Module);
+    }
+
+    private void AttachNotesEvents()
+    {
+        if (NotesModule == null)
+            return;
+
+        NotesModule.NoteChangedDelegate = NotesModuleOnNoteChanged;
+        NotesModule.SequenceDetectedDelegate = NotesModuleOnSequenceDetected;
+    }
+
+    private static string ToNote(char letter)
+    {
+        return char.ToUpperInvariant(letter) switch
+        {
+            'C' => "Do",
+            'D' => "Re",
+            'E' => "Mi",
+            'F' => "Fa",
+            'G' => "Sol",
+            'A' => "La",
+            'B' => "Si",
+            _ => "?"
+        };
+    }
+
+    private void NotesModuleOnNoteChanged(int midiNote, char naturalLetter, float frequencyHz)
+    {
+        Debug.WriteLine($"[Notes] midi={midiNote} ({naturalLetter} = {ToNote(naturalLetter)}) {frequencyHz:F1}Hz");
+    }
+
+    private void NotesModuleOnSequenceDetected(NoteSequenceEventKind kind, int consecutiveNotes, ReadOnlySpan<char> lastLetters, ReadOnlySpan<int> lastMidiNotes)
+    {
+        var letters = new string(lastLetters);
+        Debug.WriteLine($"[NotesSequence] {kind} streak={consecutiveNotes} letters={letters}");
+
+        _achievementEngine?.Process(kind);
+    }
+
+    protected void LauchTimerStopEffect(int seconds)
+    {
+        if (TimerUpdateLocked == null)
+        {
+            TimerUpdateLocked = new RestartingTimer<object>(TimeSpan.FromSeconds(seconds),
+                (args) =>
+                {
+                    _mainStack.EnableConfetti(false);
+                });
+            TimerUpdateLocked.Start(null);
+        }
+        else
+        {
+            TimerUpdateLocked.Restart(null);
+        }
+    }
+
+    protected RestartingTimer<object> TimerUpdateLocked;
+
+    private void ShowAchievementBanner(string name)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            // Cancel any banner already fading
+            _bannerCts?.Cancel();
+            _bannerCts = new CancellationTokenSource();
+            var cts = _bannerCts;
+
+            _achievementBannerLabel.Text = name;
+            _achievementBanner.Opacity = 1;
+            _achievementBanner.IsVisible = true;
+
+            try
+            {
+                await Task.Delay(2000, cts.Token);
+                await _achievementBanner.FadeToAsync(0, 600, Easing.CubicOut, cts);
+                _achievementBanner.IsVisible = false;
+            }
+            catch (OperationCanceledException)
+            {
+                // A new achievement interrupted — it will take over visibility
+            }
+        });
+    }
+
+    private void InitAchievements()
+    {
+        _achievementEngine = new AchievementEngine();
+
+        // Local helper keeps Name in one place and wires the banner automatically
+        void Register(NoteSequenceEventKind trigger, string name, Action visualAction)
+        {
+            _achievementEngine.Register(new AchievementDefinition
+            {
+                Trigger = trigger,
+                Name = name,
+                OnAchieved = () =>
+                {
+                    ShowAchievementBanner(name);
+                    visualAction();
+                }
+            });
+        }
+
+        Register(NoteSequenceEventKind.ThreeNoteRunAscending, "Going Up!",
+            () =>
+            {
+                _mainStack.EnableConfetti(true);
+                LauchTimerStopEffect(2);
+            });
+
+        Register(NoteSequenceEventKind.ThreeNoteRunDescending, "Scale Down!",
+            () =>
+            {
+                _mainStack.EnableConfetti(true);
+                LauchTimerStopEffect(2);
+            });
+
+        Register(NoteSequenceEventKind.SevenConsecutiveNotes, "7-Note Streak!",
+            () =>
+            {
+                _mainStack.EnableConfetti(true);
+                LauchTimerStopEffect(4);
+            });
+
+        Register(NoteSequenceEventKind.FourteenConsecutiveNotes, "Perfect Streak!",
+            () =>
+            {
+                _mainStack.EnableConfetti(true);
+                LauchTimerStopEffect(6);
+                TriggerCelebration();
+            });
     }
 
     /// <summary>
