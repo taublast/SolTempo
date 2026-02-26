@@ -259,7 +259,7 @@ public partial class SettingsPopup : AnimatedPopup
             await Share.RequestAsync(new ShareTextRequest
             {
                 Title = ResStrings.AppTitle,
-                Text = "Check out SolTempo - Notes & BPM detector!\nhttps://github.com/taublast/SolTempo"
+                Text = ResStrings.ShareText
             });
         });
     }

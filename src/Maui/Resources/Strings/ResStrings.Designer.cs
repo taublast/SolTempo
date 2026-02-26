@@ -214,6 +214,16 @@ namespace SolTempo.Resources.Strings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Check out SolTempo - Notes &amp; BPM detector mobile app!
+        ///https://github.com/taublast/SolTempo.
+        /// </summary>
+        public static string ShareText {
+            get {
+                return ResourceManager.GetString("ShareText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Yes.
         /// </summary>
         public static string Yes {

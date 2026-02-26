@@ -171,4 +171,8 @@
   <data name="SequenceTwoOctaves" xml:space="preserve">
     <value>Perfect Streak!</value>
   </data>
+  <data name="ShareText" xml:space="preserve">
+    <value>Check out SolTempo - Notes &amp; BPM detector mobile app!
+https://github.com/taublast/SolTempo</value>
+  </data>
 </root>
