@@ -25,6 +25,8 @@ namespace SolTempo.Helpers
         public int NotesNotation { get; set; }
         public bool NotesUseSemiNotes { get; set; }
 
+        public long TotalUsageSeconds { get; set; }
+        public bool RatingRequested { get; set; }
 
         private static UserSettings _loaded;
 

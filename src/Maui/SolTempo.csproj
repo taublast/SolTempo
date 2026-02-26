@@ -109,6 +109,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
 
+    <PackageReference Include="Plugin.Maui.AppRating" Version="1.2.3" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.70" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     <!--<PackageReference Include="DrawnUi.Maui" Version="1.6.2.5" />-->

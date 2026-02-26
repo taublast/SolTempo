@@ -1,14 +1,15 @@
 using AppoMobi.Specials;
-using System.Diagnostics;
 using DrawnUi.Controls;
 using DrawnUi.Infrastructure;
 using DrawnUi.Models;
 using DrawnUi.Views;
+using Plugin.Maui.AppRating;
+using ShadersCamera.Views;
 using SolTempo.Audio;
 using SolTempo.Effects;
 using SolTempo.Helpers;
 using SolTempo.Resources.Strings;
-using ShadersCamera.Views;
+using System.Diagnostics;
 
 namespace SolTempo.UI;
 
@@ -392,7 +393,7 @@ public partial class AudioPage
                                             _helpPopup?.Show();
                                         }),
 
-                       
+
                                     }
                                 }
                             },
@@ -442,7 +443,7 @@ public partial class AudioPage
                     }
                 }.Assign(out _achievementBanner),
 
-#if DEBUG
+#if xDEBUG
                 new SkiaLabelFps()
                 {
                     Margin = new(0, 0, 4, 24),
@@ -474,7 +475,25 @@ public partial class AudioPage
                     Recorder.IsOn = true;
 
                     //for fast use in transitions
-                    SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl"); 
+                    SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl");
+
+                    if (UserSettings.Current.TotalUsageSeconds >= 3600 && !UserSettings.Current.RatingRequested)
+                    {
+                        UserSettings.Current.RatingRequested = true;
+                        UserSettings.Save();
+                        MainThread.BeginInvokeOnMainThread(async () =>
+                        {
+                            try
+                            {
+                                await AppRating.Default.PerformInAppRateAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                Super.Log(ex);
+                            }
+                        });
+                    }
+
                 });
             }
         };
