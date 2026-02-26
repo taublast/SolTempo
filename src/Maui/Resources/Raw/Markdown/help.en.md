@@ -1,10 +1,10 @@
-# SolTempo
+# SolTempo Mobile App
 
-## Mobile App
+## What It Does
 
-App listens to your instrument or voice in real time and identifies the musical note you are playing or singing. Shows encouraging effects when correctly singing 7 or even 14 consecutive notes in a row.
+Listens to your instrument or voice in real time and identifies the musical note you are playing or singing. Shows encouraging effects when correctly singing 7 or even 14 consecutive notes in a row.
 
-App also detects the tempo of the music being played, showing the beats per minute (BPM) in a separate module.
+Will also detect the beats per minute (BPM) tempo of the music being played if switched to a secondary module.
 
 ## Quick Tips
 
