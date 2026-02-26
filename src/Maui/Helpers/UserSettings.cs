@@ -10,7 +10,7 @@ namespace SolTempo.Helpers
             Lang = "en";
             Module = 0;
             Device = 0;
-            Gain = false;
+            Gain = true;
             NotesUseSemiNotes = true;
             NotesNotation = 1; //eu
         }
