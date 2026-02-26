@@ -1,6 +1,7 @@
 using AppoMobi.Specials;
 using System.Diagnostics;
 using DrawnUi.Controls;
+using DrawnUi.Infrastructure;
 using DrawnUi.Models;
 using DrawnUi.Views;
 using SolTempo.Audio;
@@ -91,39 +92,6 @@ public partial class AudioPage
     public AudioPage()
     {
         Title = ResStrings.AppTitle;
-
-        ToolbarItems.Add(new ToolbarItem
-        {
-            Text = "Share App",
-            Order = ToolbarItemOrder.Secondary,
-            Priority = 0,
-            Command = new Command(OnShareMenuTapped)
-        });
-
-        ToolbarItems.Add(new ToolbarItem
-        {
-            Text = "Privacy Policy",
-            Order = ToolbarItemOrder.Secondary,
-            Priority = 1,
-            Command = new Command(OnPrivacyMenuTapped)
-        });
-    }
-
-    private async void OnShareMenuTapped()
-    {
-        await Share.RequestAsync(new ShareTextRequest
-        {
-            Title = ResStrings.AppTitle,
-            Text = "Check out SolTempo – music notes & BPM detector!\nhttps://github.com/taublast/SolTempo"
-        });
-    }
-
-    private async void OnPrivacyMenuTapped()
-    {
-        await DisplayAlert(
-            "Privacy Policy",
-            "SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device.",
-            ResStrings.BtnOk);
     }
 
     private void CreateContent()
@@ -349,23 +317,7 @@ public partial class AudioPage
 
                                                 IsBusy = true;
 
-                                                var fx = new TransitionEffect
-                                                { 
-                                               
-                                                    //ShaderSource = @"Shaders\transition_circleopen.sksl", //ellipse cat's eye
-                                                    //ShaderSource = @"Shaders\transition_circlecrop.sksl",
-                                                    //ShaderSource = @"Shaders\transition_iris.sksl",
-
-                                                    ShaderSource = @"Shaders\transition_ripple.sksl",
-                                                    //ShaderSource = @"Shaders\transition_swirl.sksl",
-                                                    //ShaderSource = @"Shaders\transition_zoom.sksl",
-                                               
-                                                    //ShaderSource = @"Shaders\transition_pixelize.sksl", //ERROR
-                                               
-                                                    //ShaderSource = @"Shaders\transition_fadecolor.sksl",
-                                                    //ShaderSource = @"Shaders\transition_colorphase.sksl",
-                                                    DurationMs = 600
-                                                };
+                                                var fx = new TransitionEffect();
                                                 fx.Midpoint  += (s, e) =>
                                                 {
                                                     ToggleVisualizerMode();
@@ -382,7 +334,6 @@ public partial class AudioPage
                                                 _mainStack.VisualEffects.Add(fx);
                                                 fx.Play();
                                             }
-
 
                                         }),
 
@@ -522,6 +473,9 @@ public partial class AudioPage
                 Tasks.StartDelayed(TimeSpan.FromMilliseconds(500), () =>
                 {
                     Recorder.IsOn = true;
+
+                    //for fast use in transitions
+                    SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl"); 
                 });
             }
         };

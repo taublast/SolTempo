@@ -1,10 +1,10 @@
-# SolTempo  Mobile App
+# SolTempo
 
-## What It Does
+## Mobile App
 
-App listens to your instrument or voice in real time and identifies the musical note you are playing or singing.
+App listens to your instrument or voice in real time and identifies the musical note you are playing or singing. Shows encouraging effects when correctly singing 7 or even 14 consecutive notes in a row.
 
-On top of that another module can detect the tempo of the music being played, showing the beats per minute (BPM).
+App also detects the tempo of the music being played, showing the beats per minute (BPM) in a separate module.
 
 ## Quick Tips
 
@@ -16,11 +16,12 @@ On top of that another module can detect the tempo of the music being played, sh
 
 ---
 
-## Pitch Detection Module
+## Note Pitch Detection
 
-best used for solfeggio traiing or instrument tuning.  
-This module listens to the audio input and detects the pitch of the sound being played or sung. It displays the detected pitch as a musical note name, along with a visual representation of how close you are to the target pitch.  
-Some options can be customised inside settings.
+Best used for solfeggio training or instrument tuning.  
+Listens to the audio input and detects the pitch of the sound being played or sung. It displays the detected pitch as a musical note name, along with a visual representation of how close you are to the target pitch.  
+Some options like using audio gain etc can be customised inside settings.  
+For best results please make sure no background music is playing while detecting voice/intrument pitch.
 
 ### Notes Mode
 
@@ -39,12 +40,12 @@ Switch **Notation** to choose how notes are labelled:
 Enable to display sharp and flat semitones (C#, Eb, etc.) as distinct note names rather than grouping them with their neighbours.
 
 
-## BPM Detection Module
+## BPM Detection
 
-Designed tofor BPM detection of a music or a metronome inside a 40-260 bpm range.  
-It displays the beats per minute (BPM) and a visual representation of the detected tempo.  
-Note that tempo of the music can change over time inside same musical composition.  
-If you think the BPM reading might be inaccurate, try tapping on the display card to reset the listener.
+Designed for beats per minute (BPM) detection of music or metronome inside a 40-260 range.  
+Displays BPM and a visual representation.  
+Please note that music tempo can vary over time inside same composition.  
+If detected BPM seems inaccurate, tap on the display card to reset the listener.
 
 ## Audio Settings
 
@@ -54,7 +55,7 @@ Select the microphone or audio input device to use. Choose **System Default** to
 
 ### Use Gain
 
-Apply automatic gain to boost quiet input signals before analysis.
+Apply +5 gain to boost input signal before analysis.
 
 ---
 

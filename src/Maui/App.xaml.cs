@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using SolTempo.UI;
+using System.Reflection;
 
 namespace SolTempo
 {
@@ -13,7 +14,7 @@ namespace SolTempo
 
         protected override Window CreateWindow(IActivationState activationState)
         {
-            return new Window(new AppShell());
+            return new Window(new AudioPage());
         }
 
         protected override void OnStart()

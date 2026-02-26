@@ -1,4 +1,5 @@
 using DrawnUi.Draw;
+using DrawnUi.Infrastructure;
 
 namespace SolTempo.Effects;
 
@@ -25,6 +26,17 @@ public class TransitionEffect : AnimatedShaderEffect
     public TransitionEffect()
     {
         UseBackground = PostRendererEffectUseBackgroud.Once; // snapshot taken once at Play(), frozen for animation
+        ShaderSource = @"Shaders\transition_ripple.sksl";
+        DurationMs = 600;
+
+        //ShaderSource = @"Shaders\transition_circleopen.sksl", //ellipse cat's eye
+        //ShaderSource = @"Shaders\transition_circlecrop.sksl",
+        //ShaderSource = @"Shaders\transition_iris.sksl",
+        //ShaderSource = @"Shaders\transition_swirl.sksl",
+        //ShaderSource = @"Shaders\transition_zoom.sksl",
+        //ShaderSource = @"Shaders\transition_pixelize.sksl", //ERROR
+        //ShaderSource = @"Shaders\transition_fadecolor.sksl",
+        //ShaderSource = @"Shaders\transition_colorphase.sksl",
     }
 
     /// <summary>

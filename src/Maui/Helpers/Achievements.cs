@@ -6,7 +6,7 @@ namespace SolTempo.UI;
 /// Holds the registered achievement definitions and dispatches them
 /// when a matching sequence event is detected.
 /// </summary>
-public sealed class Achievements
+public class Achievements
 {
     private readonly List<Achievement> _definitions = new();
 

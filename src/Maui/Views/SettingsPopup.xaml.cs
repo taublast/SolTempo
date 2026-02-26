@@ -1,5 +1,7 @@
+using SolTempo;
 using SolTempo.Audio;
 using SolTempo.Helpers;
+using SolTempo.Resources.Strings;
 using SolTempo.UI;
 
 
@@ -239,4 +241,26 @@ public partial class SettingsPopup : AnimatedPopup
         Close();
     }
 
+    private void TappedPrivacy(object sender, ControlTappedEventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await App.Instance.MainPage.DisplayAlert(
+                "Privacy Policy",
+                "SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device.",
+                ResStrings.BtnOk);
+        });
+    }
+
+    private void TappedShareApp(object sender, ControlTappedEventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await Share.RequestAsync(new ShareTextRequest
+            {
+                Title = ResStrings.AppTitle,
+                Text = "Check out SolTempo - Notes & BPM detector!\nhttps://github.com/taublast/SolTempo"
+            });
+        });
+    }
 }

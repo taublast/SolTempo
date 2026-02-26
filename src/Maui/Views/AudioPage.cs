@@ -73,16 +73,16 @@ public partial class AudioPage : BasePageReloadable, IDisposable
             _equalizer.AddSample(sample);
         }
 
-          if (_musicBPMDetector.IsVisible)
+          if (_musicBPMDetectorWrapper.IsVisible)
           {
               _musicBPMDetector?.AddSample(sample);
         }
     }
     
 
-    private void RecorderOnStateChanged(object sender, CameraState e)
+    private void RecorderOnStateChanged(object sender, HardwareState state)
     {
-        if (e == CameraState.On)
+        if (state == HardwareState.On)
         {
            
         }

@@ -151,10 +151,7 @@ public class SettingsButton : SkiaLayout, ISkiaGestureListener
     /// </summary>
     public override ISkiaGestureListener ProcessGestures(SkiaGesturesParameters args, GestureEventProcessingInfo apply)
     {
-        if (args.Type == TouchActionResult.Pointer)
-        {
-            SetHover(true);
-        }
+        CheckHovered(args);
 
         if (args.Type == TouchActionResult.Down)
         {

@@ -40,7 +40,10 @@
 
                 <draw:SkiaScroll HorizontalOptions="Fill">
 
-                    <draw:SkiaStack Spacing="0" UseCache="Image">
+                    <draw:SkiaStack
+                        Padding="0,0,0,16"
+                        Spacing="0"
+                        UseCache="Image">
 
 
                         <!--<draw:SkiaBackdrop
@@ -62,7 +65,7 @@
 
                         <!--  MODULE  -->
                         <draw:SkiaStack
-                            Margin="24"
+                            Margin="24, 16"
                             HorizontalOptions="Fill"
                             Spacing="24"
                             UseCache="Operations"
@@ -139,7 +142,8 @@
 
                         <!--  AUDIO  -->
                         <draw:SkiaStack
-                            Margin="24"
+                            Margin="24,16"
+
                             HorizontalOptions="Fill"
                             Spacing="24"
                             UseCache="Operations"
@@ -206,6 +210,85 @@
                                     HorizontalOptions="End"
                                     Toggled="UseGainSwitch_OnToggled"
                                     WidthRequest="46" />
+
+                            </draw:SkiaLayout>
+
+
+                        </draw:SkiaStack>
+
+                        <!--  VARIOUS  -->
+                        <draw:SkiaStack
+                            Margin="24, 16"
+                            HorizontalOptions="Fill"
+                            Spacing="24"
+                            UseCache="Operations"
+                            VerticalOptions="Start">
+
+                            <draw:SkiaRichLabel
+                                FontAttributes="Bold"
+                                FontFamily="FontTextTitle"
+                                FontSize="18"
+                                HorizontalOptions="Center"
+                                Text="Various"
+                                TextColor="DarkGray"
+                                UseCache="Operations" />
+
+
+                            <!--  Share App  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                MinimumHeightRequest="32"
+                                Tapped="TappedShareApp"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Share App"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaLabel
+                                    FontAttributes="Bold"
+                                    FontFamily="FontIcons"
+                                    FontSize="18"
+                                    HorizontalOptions="End"
+                                    MaxLines="1"
+                                    Text="{x:Static ui:IconFont.ChevronRight}"
+                                    TextColor="Goldenrod"
+                                    VerticalOptions="Fill"
+                                    VerticalTextAlignment="Center" />
+
+                            </draw:SkiaLayout>
+
+                            <!--  Privacy  -->
+                            <draw:SkiaLayout
+                                Padding="1,0"
+                                HorizontalOptions="Fill"
+                                Tapped="TappedPrivacy"
+                                UseCache="Operations">
+
+                                <draw:SkiaRichLabel
+                                    FontFamily="FontTextTitle"
+                                    FontSize="16"
+                                    Text="Privacy"
+                                    TextColor="White"
+                                    UseCache="Operations"
+                                    VerticalOptions="Center" />
+
+                                <draw:SkiaLabel
+                                    FontAttributes="Bold"
+                                    FontFamily="FontIcons"
+                                    FontSize="18"
+                                    HorizontalOptions="End"
+                                    MaxLines="1"
+                                    Text="{x:Static ui:IconFont.ChevronRight}"
+                                    TextColor="Goldenrod"
+                                    VerticalOptions="Fill"
+                                    VerticalTextAlignment="Center" />
+
 
                             </draw:SkiaLayout>
 
