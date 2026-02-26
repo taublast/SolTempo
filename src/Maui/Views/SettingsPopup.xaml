@@ -41,7 +41,7 @@
                 <draw:SkiaScroll HorizontalOptions="Fill">
 
                     <draw:SkiaStack
-                        Padding="0,0,0,16"
+                        Padding="0,12,0,12"
                         Spacing="0"
                         UseCache="Image">
 
@@ -65,7 +65,7 @@
 
                         <!--  MODULE  -->
                         <draw:SkiaStack
-                            Margin="24, 16"
+                            Margin="24,16"
                             HorizontalOptions="Fill"
                             Spacing="24"
                             UseCache="Operations"
@@ -143,7 +143,6 @@
                         <!--  AUDIO  -->
                         <draw:SkiaStack
                             Margin="24,16"
-
                             HorizontalOptions="Fill"
                             Spacing="24"
                             UseCache="Operations"
@@ -218,7 +217,7 @@
 
                         <!--  VARIOUS  -->
                         <draw:SkiaStack
-                            Margin="24, 16"
+                            Margin="24,16"
                             HorizontalOptions="Fill"
                             Spacing="24"
                             UseCache="Operations"
