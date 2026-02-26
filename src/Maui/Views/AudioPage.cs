@@ -37,6 +37,8 @@ public partial class AudioPage : BasePageReloadable, IDisposable
     {
         if (subscribe)
         {
+            AttachHardware(false); //fool proof
+
             Recorder.StateChanged += RecorderOnStateChanged;
             Recorder.OnError += OnHardwareError;
             Recorder.RecordingSuccess += OnRecordingSuccess;
@@ -61,22 +63,26 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         }
     }
 
+    private long _lastAudioDispatchMs = 0;
+
     private void OnAudioSample(AudioSample sample)
     {
+        // Single wall-clock gate — drops burst chunks 
+        // AudioRecorder is left unthrottled to support file recording of all frames
+        long nowMs = Environment.TickCount64;
+        //if (nowMs - _lastAudioDispatchMs < 16) 
+        //    return;
+
+        _lastAudioDispatchMs = nowMs;
+
         if (_musicNotesWrapper.IsVisible)
-        {
             NotesModule.AddSample(sample);
-        }
 
         if (_equalizer.IsVisible)
-        {
             _equalizer.AddSample(sample);
-        }
 
-          if (_musicBPMDetectorWrapper.IsVisible)
-          {
-              _musicBPMDetector?.AddSample(sample);
-        }
+        if (_musicBPMDetectorWrapper.IsVisible)
+            _musicBPMDetector?.AddSample(sample);
     }
     
 

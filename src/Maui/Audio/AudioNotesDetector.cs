@@ -180,38 +180,13 @@ namespace SolTempo.Audio
 
             float minDim = MathF.Min(width, height);
             float cyStaff = top + height * 0.72f;
-            float cyGauge = top + height * 0.88f;
-            float textLarge = MathF.Max(12f * scale, minDim * 0.44f);
-            float textSmall = MathF.Max(10f * scale, minDim * 0.16f);
-            float textInfo = MathF.Max(8f * scale, minDim * 0.10f);
-
 
             // Always Draw Staff
             float staffWidth = width * 0.75f;
             float lineSpacing = MathF.Max(2f * scale, height * 0.035f);
+
             // Show notes if we have a detected note (even if signal isn't perfect)
             DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
-
-            // Gauge Background
-            /*
-
-            _paintGauge.StrokeWidth = 6 * scale;
-    float barWidth = width * 0.75f;
-    float barY = cyGauge;
-    canvas.DrawLine(cx - barWidth / 2, barY, cx + barWidth / 2, barY, _paintGauge);
-
-    float tick = Math.Max(2f * scale, height * 0.03f);
-    canvas.DrawLine(cx, barY - tick, cx, barY + tick, _paintGauge); // Center tick
-
-    // Gauge Needle
-
-    float offset = (_displayCents / 50.0f) * (barWidth / 2);
-    offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
-    _paintNeedle.Color = _displayColorSK;
-    float dotRadius = Math.Max(2f * scale, height * 0.03f);
-    canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
-    */
-
 
         }
 
@@ -496,14 +471,16 @@ namespace SolTempo.Audio
                 
                 _samplesAddedSinceLastScan = 0;
                 _displayMidiNote = _currentMidiNote;
-                _displayFrequency = _currentFrequency;
                 _displayHasSignal = HasSignal;
 
-                // Smooth cents for display
+                // Freeze Hz at the last good reading — only update while actively detecting a confirmed note
+                if (_displayHasSignal && _currentMidiNote > 0)
+                    _displayFrequency = _currentFrequency;
+
+                // Freeze cents when silent — decay to 0 was meaningless.
+                // _smoothCents is reset to 0 when a new confirmed note starts (in DetectPitch).
                 if (_displayHasSignal)
                     _smoothCents = _smoothCents * 0.5f + _currentCents * 0.5f;
-                else
-                    _smoothCents = _smoothCents * 0.9f;
 
                 _displayCents = _smoothCents;
 
@@ -733,6 +710,7 @@ namespace SolTempo.Audio
                     {
                         _currentMidiNote = winnerNote;
                         _centsHead = 0; _centsCount = 0;
+                        _smoothCents = 0;
                         noteChanged = true;
                     }
 
@@ -790,7 +768,7 @@ namespace SolTempo.Audio
         }
 
         /// <summary>
-        /// Here we will nor render anything anymore, 
+        /// Here we will not render anything anymore, 
         /// </summary>
         /// <param name="canvas"></param>
         /// <param name="viewport"></param>
@@ -798,64 +776,7 @@ namespace SolTempo.Audio
         /// <returns></returns>
         public bool Render(SKCanvas canvas, SKRect viewport, float scale)
         {
-            if (viewport.Width <= 0 || viewport.Height <= 0)
-                return false;
-
-            float width = viewport.Width;
-            float height = viewport.Height;
-            float left = viewport.Left;
-            float top = viewport.Top;
-
-            //if (_paintNeedle == null)
-            //{
-            //    _paintGauge = new SKPaint { Color = SKColors.DarkGray, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * scale };
-            //    _paintNeedle = new SKPaint { Color = SKColors.Cyan, IsAntialias = true, Style = SKPaintStyle.Fill };
-            //}
-
-
-            float cx = left + width / 2f;
-
-            float cyStaff = top + height * 0.72f;
-            float cyGauge = top + height * 0.88f;
-
-
-            // Always Draw Staff
-            float staffWidth = width * 0.75f;
-            float lineSpacing = MathF.Max(2f * scale, height * 0.035f);
-            // Show notes if we have a detected note (even if signal isn't perfect)
-            DrawMusicalStaff(canvas, cx, cyStaff, lineSpacing, staffWidth, scale, _displayMidiNote > 0 ? _displayMidiNote : 0, 71);
-
-            // Draw Info
-            _labelFrequency.TextColor = _displayHasSignal ? _colorFreqOnWhite : _colorFreqOffWhite;
-
-            if (_displayFrequency != _lastRenderedFreq)
-            {
-                _lastRenderedFreq = _displayFrequency;
-                _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
-            }
-
-            // Gauge Background
-            //float barWidth = width * 0.75f;
-            //float barY = cyGauge;
-
-            //canvas.DrawLine(cx - barWidth / 2, barY, cx + barWidth / 2, barY, _paintGauge);
-            //float tick = Math.Max(2f * scale, height * 0.03f);
-            //canvas.DrawLine(cx, barY - tick, cx, barY + tick, _paintGauge); // Center tick
-
-            // Gauge Needle
-            //float offset = (_displayCents / 50.0f) * (barWidth / 2);
-            //offset = Math.Clamp(offset, -barWidth / 2, barWidth / 2);
-            //_paintNeedle.Color = _displayColorSK;
-            //float dotRadius = Math.Max(2f * scale, height * 0.03f);
-            //canvas.DrawCircle(cx + offset, barY, dotRadius, _paintNeedle);
-
-            // Cents Text — only reallocate string when value changes
-            if (_displayCents != _lastRenderedCents)
-            {
-                _lastRenderedCents = _displayCents;
-                _labelCents.Text = $"{_displayCents:+0;-0} cents";
-            }
-
+            //unimplemented
             return false;
         }
 
@@ -965,12 +886,13 @@ namespace SolTempo.Audio
             private int _count;
 
             // Run tracking
-            private int _runLength;           // notes in current directional run (1 = seed, 7 = complete)
-            private int _runDir;              // +1 ascending, -1 descending, 0 = not yet determined
-            private char _lastLetter;         // last accepted natural letter
-            private int _completedSevenRuns;  // how many complete 7-run streaks in current chain
-            private bool _fired4;             // whether 4-note streak fired in current chain
-            private bool _fired7;             // whether 7-note streak fired in current run
+            private int _runLength;              // notes in current directional run (1 = seed)
+            private int _runDir;                 // +1 ascending, -1 descending, 0 = not yet determined
+            private char _lastLetter;            // last accepted natural letter
+            private bool _fired4;                // whether 4-note streak fired in current chain
+            private bool _fired8;                // whether 8-note streak fired in current directional run
+            private bool _awaitingSuper;         // set after 8-streak fires; survives one direction reversal
+            private bool _reversedAfterEight;    // set when direction reverses while _awaitingSuper is active
 
             public NoteSequenceTracker(Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> callback)
             {
@@ -982,9 +904,10 @@ namespace SolTempo.Audio
                 _runLength = 0;
                 _runDir = 0;
                 _lastLetter = '\0';
-                _completedSevenRuns = 0;
                 _fired4 = false;
-                _fired7 = false;
+                _fired8 = false;
+                _awaitingSuper = false;
+                _reversedAfterEight = false;
                 Array.Clear(_midiNotes, 0, _midiNotes.Length);
                 Array.Clear(_letters, 0, _letters.Length);
                 _count = 0;
@@ -1020,9 +943,10 @@ namespace SolTempo.Audio
                     // Non-consecutive step — break the run entirely
                     _runLength = 1;
                     _runDir = 0;
-                    _completedSevenRuns = 0;
                     _fired4 = false;
-                    _fired7 = false;
+                    _fired8 = false;
+                    _awaitingSuper = false;
+                    _reversedAfterEight = false;
                     return;
                 }
 
@@ -1039,11 +963,22 @@ namespace SolTempo.Audio
                 }
                 else
                 {
-                    // Direction reversed — start new run, allow Seven to fire again
+                    // Direction reversed
+                    if (_awaitingSuper && !_reversedAfterEight)
+                    {
+                        // First reversal after an 8-streak — allow it toward the super achievement
+                        _reversedAfterEight = true;
+                    }
+                    else
+                    {
+                        // Second reversal or no pending super — clear super state entirely
+                        _awaitingSuper = false;
+                        _reversedAfterEight = false;
+                    }
                     _runLength = 2;
                     _runDir = dir;
                     _fired4 = false;
-                    _fired7 = false;
+                    _fired8 = false;
                 }
 
                 // — Fire events —
@@ -1060,31 +995,33 @@ namespace SolTempo.Audio
                         _midiNotes.AsSpan(_count - 4, 4));
                 }
 
-                if (_runLength == 7 && !_fired7)
+                // Super achievement: 8 notes one way, then 7 notes reversed (back to tonic).
+                // Checked first so the reversed-8 doesn't also trigger the plain 8-streak below.
+                if (_runLength == 8 && _awaitingSuper && _reversedAfterEight)
                 {
-                    _fired7 = true;
-                    _completedSevenRuns++;
+                    _raiseSequence(
+                        NoteSequenceEventKind.FourteenConsecutiveNotes,
+                        8,
+                        _letters.AsSpan(_count - 8, 8),
+                        _midiNotes.AsSpan(_count - 8, 8));
+
+                    // Reset so it can trigger again later
+                    _runLength = 1;
+                    _runDir = 0;
+                    _fired4 = false;
+                    _fired8 = false;
+                    _awaitingSuper = false;
+                    _reversedAfterEight = false;
+                }
+                else if (_runLength == 8 && !_fired8)
+                {
+                    _fired8 = true;
+                    _awaitingSuper = true;
                     _raiseSequence(
                         NoteSequenceEventKind.SevenConsecutiveNotes,
-                        7,
-                        _letters.AsSpan(_count - 7, 7),
-                        _midiNotes.AsSpan(_count - 7, 7));
-
-                    if (_completedSevenRuns == 2)
-                    {
-                        _raiseSequence(
-                            NoteSequenceEventKind.FourteenConsecutiveNotes,
-                            14,
-                            _letters.AsSpan(_count - 14, 14),
-                            _midiNotes.AsSpan(_count - 14, 14));
-
-                        // Reset so it can trigger again later
-                        _completedSevenRuns = 0;
-                        _runLength = 1;
-                        _runDir = 0;
-                        _fired4 = false;
-                        _fired7 = false;
-                    }
+                        8,
+                        _letters.AsSpan(_count - 8, 8),
+                        _midiNotes.AsSpan(_count - 8, 8));
                 }
             }
 

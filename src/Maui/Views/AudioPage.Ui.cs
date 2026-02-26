@@ -390,7 +390,6 @@ public partial class AudioPage
                                         .OnTapped(me =>
                                         {
                                             _helpPopup?.Show();
-                                            //TriggerCelebration();
                                         }),
 
                        
@@ -427,7 +426,7 @@ public partial class AudioPage
                     ZIndex = 200,
                     IsVisible = false,
                     CornerRadius = 24,
-                    BackgroundColor = Color.FromArgb("#EE000000"),
+                    BackgroundColor = Color.FromArgb("#99000000"),
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center,
                     Padding = new(32, 16),
@@ -557,6 +556,8 @@ public partial class AudioPage
 
     private async void ShowAchievementBanner(string name)
     {
+        Debug.WriteLine($"IShowAchievementBanner {name}");
+
         // Cancel any banner already fading
         _bannerCts?.Cancel();
         _bannerCts = new CancellationTokenSource();
@@ -575,6 +576,7 @@ public partial class AudioPage
         catch (OperationCanceledException)
         {
             // A new achievement interrupted  
+            Debug.WriteLine("Interrupted!!!");
         }
     }
 
@@ -597,26 +599,26 @@ public partial class AudioPage
             });
         }
 
-        Register(NoteSequenceEventKind.FourNoteRunAscending, "Going Up!",
-            () =>
-            {
+        //Register(NoteSequenceEventKind.FourNoteRunAscending, "Rising Well!",
+        //    () =>
+        //    {
 
-            });
+        //    });
 
-        Register(NoteSequenceEventKind.FourNoteRunDescending, "Scale Down!",
-            () =>
-            {
+        //Register(NoteSequenceEventKind.FourNoteRunDescending, "Descending Well!",
+        //    () =>
+        //    {
 
-            });
+        //    });
 
-        Register(NoteSequenceEventKind.SevenConsecutiveNotes, "7-Note Streak!",
+        Register(NoteSequenceEventKind.SevenConsecutiveNotes, ResStrings.SequenceOctave,
             () =>
             {
                 _mainStack.EnableConfetti(true);
-                LauchTimerStopEffect(4);
+                LauchTimerStopEffect(6);
             });
 
-        Register(NoteSequenceEventKind.FourteenConsecutiveNotes, "Perfect Streak!",
+        Register(NoteSequenceEventKind.FourteenConsecutiveNotes, ResStrings.SequenceTwoOctaves,
             () =>
             {
                 PlayAchievementEffect();

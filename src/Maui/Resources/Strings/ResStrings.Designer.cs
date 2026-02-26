@@ -187,6 +187,24 @@ namespace SolTempo.Resources.Strings {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Full Octave!.
+        /// </summary>
+        public static string SequenceOctave {
+            get {
+                return ResourceManager.GetString("SequenceOctave", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Perfect Streak!.
+        /// </summary>
+        public static string SequenceTwoOctaves {
+            get {
+                return ResourceManager.GetString("SequenceTwoOctaves", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Settings.
         /// </summary>
         public static string Settings {

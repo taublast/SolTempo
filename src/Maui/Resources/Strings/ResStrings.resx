@@ -165,4 +165,10 @@
   <data name="BtnOk" xml:space="preserve">
     <value>OK</value>
   </data>
+  <data name="SequenceOctave" xml:space="preserve">
+    <value>Full Octave!</value>
+  </data>
+  <data name="SequenceTwoOctaves" xml:space="preserve">
+    <value>Perfect Streak!</value>
+  </data>
 </root>
