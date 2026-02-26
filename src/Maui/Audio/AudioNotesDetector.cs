@@ -669,10 +669,10 @@ namespace SolTempo.Audio
 
                 float exactLag = bestLag + offset;
 
-                _currentFrequency = _sampleRate / exactLag;
+                float rawFrequency = _sampleRate / exactLag;
 
                 // Convert to Note and Cents
-                double noteNum = 69 + 12 * Math.Log2(_currentFrequency / 440.0);
+                double noteNum = 69 + 12 * Math.Log2(rawFrequency / 440.0);
                 // UseSemiNotes=false: snap to nearest natural note (C D E F G A B) using exact
                 // pitch so e.g. a slightly-flat C# → C, slightly-sharp C# → D.
                 int detectedMidiNote = UseSemiNotes
@@ -741,28 +741,30 @@ namespace SolTempo.Audio
                     break;
                     }
 
+                    // Lock in Hz and cents only when vote is confident — keeps them
+                    // in sync with the confirmed note, not jumping during transitions.
+                    _currentFrequency = rawFrequency;
+
+                    float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
+                    if (targetFreq > 0)
+                    {
+                        float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
+
+                        _centsBuf[_centsHead] = rawCents;
+                        _centsHead = (_centsHead + 1) % CentsMaxHistory;
+                        if (_centsCount < CentsMaxHistory) _centsCount++;
+
+                        float sum = 0;
+                        int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
+                        for (int ci = 0; ci < _centsCount; ci++)
+                            sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
+                        _currentCents = sum / _centsCount;
+                    }
+
                     if (noteChanged)
                     {
                         RaiseNoteChanged(_currentMidiNote, _currentFrequency);
                     }
-
-                }
-
-                // Calculate cents relative to the STABLE note (so needle shows true drift)
-                float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
-                if (targetFreq > 0)
-                {
-                    float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
-
-                    _centsBuf[_centsHead] = rawCents;
-                    _centsHead = (_centsHead + 1) % CentsMaxHistory;
-                    if (_centsCount < CentsMaxHistory) _centsCount++;
-
-                    float sum = 0;
-                    int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
-                    for (int ci = 0; ci < _centsCount; ci++)
-                        sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
-                    _currentCents = sum / _centsCount;
                 }
             }
         }
