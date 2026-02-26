@@ -149,7 +149,7 @@ namespace SolTempo.Audio
                 new SkiaLabel
                 {
                     Margin = new Thickness(16,40),
-                    Text = "Tap to reset tempo",
+                    Text = "Tap to reset BPM metering",
                     FontSize = 22,
                     FontFamily = AppFonts.Default,
                     TextColor = Colors.LightGray,
@@ -393,7 +393,7 @@ namespace SolTempo.Audio
                 _labelBpm.IsVisible = true;
                 _labelBpmUnit.IsVisible = true;
 
-                if (_displayConfidence > 99)
+                if (_displayConfidence > 80)
                 {
                     _labelBpm.Text = $"{_displayBPM:F0}";
                 }
@@ -762,8 +762,33 @@ namespace SolTempo.Audio
                 float sum = 0f;
                 int startDisp = _bpmCount - 10;
                 for (int i = startDisp; i < _bpmCount; i++) sum += BpmAt(i);
-                _displayBPM = sum / 10f;
+                var maybe = (float)Math.Round(sum / 10f);
+
                 _displayConfidence = _confidence * 100f;
+
+                if (_displayConfidence > 90) //can start assuming hehe
+                {
+                    if (maybe % 10 == 9 || maybe % 10 == 4)
+                    {
+                        maybe += 1; //199=>200
+                    }
+                    else
+                    if (maybe % 10 == 8 || maybe % 10 == 3)
+                    {
+                        maybe += 2;
+                    }
+                    else
+                    if (maybe % 10 == 6 || maybe % 10 == 1)
+                    {
+                        maybe -= 1;
+                    }
+                    else
+                    if (maybe % 10 == 2 || maybe % 10 == 7)
+                    {
+                        maybe -= 2;
+                    }
+                }
+                _displayBPM = maybe;
             }
         }
 
