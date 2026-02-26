@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleVersion</key>
-  <string>100001</string>
+  <string>100002</string>
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
   <key>LSRequiresIPhoneOS</key>
@@ -17,10 +17,21 @@
 		<integer>1</integer>
 		<integer>2</integer>
 	</array>
+  
   <key>NSMicrophoneUsageDescription</key>
   <string>Allow microphone to detect pitch and tempo</string>
-  <key>UIRequiredDeviceCapabilities</key>
-	<array>
+
+  <key>NSCameraUsageDescription</key>
+  <string>NOT USED only API referenced</string>
+  <key>NSPhotoLibraryAddUsageDescription</key>
+  <string>NOT USED only API referenced</string>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>NOT USED only API referenced</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>NOT USED only API referenced</string>
+
+  <key>UIRequiredDeviceCapabilities</key>  
+  <array>
 		<string>arm64</string>
 	</array>
   <key>UIRequiresFullScreen</key>
