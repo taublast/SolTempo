@@ -44,6 +44,7 @@ Enable to display sharp and flat semitones (C#, Eb, etc.) as distinct note names
 
 Designed for beats per minute (BPM) detection of music or metronome inside a 40-260 range.  
 Displays BPM and a visual representation.  
+For slower tempos you can get best results by turning on Gain inside settings.
 Please note that music tempo can vary over time inside same composition.  
 If detected BPM seems inaccurate, tap on the display card to reset the listener.
 
