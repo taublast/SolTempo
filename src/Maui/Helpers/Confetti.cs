@@ -75,6 +75,7 @@ public class Confetti
 
     public void DrawAndUpdate(SKCanvas canvas, SKRect drawArea, float scale, long frameTimeNanos)
     {
+
         // 1. Lazy init
         if (!_initialized)
         {
