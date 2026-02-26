@@ -71,7 +71,6 @@ namespace SolTempo.Audio
                 new SkiaLabel()
                 {
                     FontSize = 140,
-                    IsParentIndependent = true,
                     FontAttributes = FontAttributes.Bold,
                     Margin = new (2,16),
                     MaxLines = 1,
@@ -247,8 +246,8 @@ namespace SolTempo.Audio
         static string placeholder = "Hi";
 
         // Detection State
-        private string _currentNote = placeholder;
-        private string _currentNoteSolf = placeholder;
+        private string _detectedNoteLetterName = placeholder;
+        private string _detectedNoteSolfegeName = placeholder;
         private int _currentMidiNote = 0;
         private float _currentFrequency = 0;
         private float _currentCents = 0;
@@ -270,9 +269,9 @@ namespace SolTempo.Audio
         // Note Vote Buffer — rolling majority vote over a TIME-BASED window.
         // Target window = VoteWindowMs of real audio regardless of scan rate.
         // PC (6ms scans) → ~25 slots; mobile (23ms chunks) → ~7 slots — both cover ~150ms.
-        private const float VoteWindowMs = 150f;  // target history in wall-clock ms (large enough to absorb vocal vibrato)
-        private const float VoteThresholdRatio = 0.50f; // fraction of window needed to confirm a note (from silence/unknown)
-        private const float VoteChangeRatio    = 0.75f; // fraction of window needed to CHANGE an already-confirmed note (hysteresis)
+        private const float VoteWindowMs = 100f;  // target history in wall-clock ms (large enough to absorb vocal vibrato)
+        private const float VoteThresholdRatio = 0.30f; // fraction of window needed to confirm a note (from silence/unknown)
+        private const float VoteChangeRatio    = 0.5f; // fraction of window needed to CHANGE an already-confirmed note (hysteresis)
         private const int MaxVoteWindow = 128;  // pre-alloc ceiling
         private int _voteWindowScans = 5;      // recomputed from actual scan interval
         private int _voteThreshold = 3;        // recomputed: confirm threshold
@@ -293,8 +292,6 @@ namespace SolTempo.Audio
         private float _smoothCents = 0;
 
         // Render State
-        private string _displayNote = placeholder;
-        private string _displayNoteSolf = placeholder;
         private int _displayMidiNote = 0;
         private float _displayFrequency = 0;
         private float _displayCents = 0;
@@ -429,8 +426,8 @@ namespace SolTempo.Audio
             _sampleRate = 44100;
             UpdateSampleRateParams();
 
-            _currentNote = placeholder;
-            _currentNoteSolf = placeholder;
+            _detectedNoteLetterName = placeholder;
+            _detectedNoteSolfegeName = placeholder;
             _currentMidiNote = 0;
             _currentFrequency = 0;
             _currentCents = 0;
@@ -441,8 +438,8 @@ namespace SolTempo.Audio
             _centsHead = 0; _centsCount = 0;
             _smoothCents = 0;
 
-            _displayNote = placeholder;
-            _displayNoteSolf = placeholder;
+            _detectedNoteLetterName = placeholder;
+            _detectedNoteSolfegeName = placeholder;
             _displayMidiNote = 0;
             _displayFrequency = 0;
             _displayCents = 0;
@@ -494,11 +491,10 @@ namespace SolTempo.Audio
                 // Update EMA of actual scan interval (reflects real audio chunk size per platform)
                 _avgScanIntervalSamples = _avgScanIntervalSamples * 0.75f + _samplesAddedSinceLastScan * 0.25f;
                 RecalcVoteParams();
-                DetectPitch(); //MIGHT call UPDATE() here if singal changed
-                _samplesAddedSinceLastScan = 0;
 
-                _displayNote = _currentNote;
-                _displayNoteSolf = _currentNoteSolf;
+                DetectPitch(); //MIGHT call UPDATE() here if singal changed
+                
+                _samplesAddedSinceLastScan = 0;
                 _displayMidiNote = _currentMidiNote;
                 _displayFrequency = _currentFrequency;
                 _displayHasSignal = HasSignal;
@@ -529,7 +525,7 @@ namespace SolTempo.Audio
 
                 // Draw Note Name
                 _labelNote.TextColor = _displayColor;
-                _labelNote.Text = _displayNoteSolf;
+                _labelNote.Text = _detectedNoteSolfegeName;
 
                 // Draw Info
                 _labelFrequency.TextColor = _displayHasSignal ? _colorFreqOnGray : _colorFreqOffGray;
@@ -742,28 +738,28 @@ namespace SolTempo.Audio
 
                     int noteIndex = _currentMidiNote % 12;
                     if (noteIndex < 0) noteIndex += 12;
-                    _currentNote = NoteNames[noteIndex];
+                    _detectedNoteLetterName = NoteNames[noteIndex];
 
                     switch (Notation)
                     {
                     case 1:
-                    _currentNoteSolf = SolfegeNames[noteIndex];
+                    _detectedNoteSolfegeName = SolfegeNames[noteIndex];
                     break;
 
                     case 2:
-                    _currentNoteSolf = SolfegeFloat[noteIndex];
+                    _detectedNoteSolfegeName = SolfegeFloat[noteIndex];
                     break;
 
                     case 3:
-                    _currentNoteSolf = SolfegeCyr[noteIndex];
+                    _detectedNoteSolfegeName = SolfegeCyr[noteIndex];
                     break;
 
                     case 4:
-                    _currentNoteSolf = SolfegeNums[noteIndex];
+                    _detectedNoteSolfegeName = SolfegeNums[noteIndex];
                     break;
 
                     default:
-                    _currentNoteSolf = NoteNames[noteIndex];
+                    _detectedNoteSolfegeName = NoteNames[noteIndex];
                     break;
                     }
 
@@ -972,9 +968,9 @@ namespace SolTempo.Audio
             private int _runLength;           // notes in current directional run (1 = seed, 7 = complete)
             private int _runDir;              // +1 ascending, -1 descending, 0 = not yet determined
             private char _lastLetter;         // last accepted natural letter
-            private int _totalConsecutive;    // total consecutive notes across direction changes
+            private int _completedSevenRuns;  // how many complete 7-run streaks in current chain
             private bool _fired4;             // whether 4-note streak fired in current chain
-            private bool _fired7;             // whether 7-note streak fired in current chain
+            private bool _fired7;             // whether 7-note streak fired in current run
 
             public NoteSequenceTracker(Action<NoteSequenceEventKind, int, ReadOnlySpan<char>, ReadOnlySpan<int>> callback)
             {
@@ -986,7 +982,7 @@ namespace SolTempo.Audio
                 _runLength = 0;
                 _runDir = 0;
                 _lastLetter = '\0';
-                _totalConsecutive = 0;
+                _completedSevenRuns = 0;
                 _fired4 = false;
                 _fired7 = false;
                 Array.Clear(_midiNotes, 0, _midiNotes.Length);
@@ -1008,7 +1004,6 @@ namespace SolTempo.Audio
                     _lastLetter = naturalLetter;
                     _runLength = 1;
                     _runDir = 0;
-                    _totalConsecutive = 1;
                     return;
                 }
 
@@ -1025,13 +1020,11 @@ namespace SolTempo.Audio
                     // Non-consecutive step — break the run entirely
                     _runLength = 1;
                     _runDir = 0;
-                    _totalConsecutive = 1;
+                    _completedSevenRuns = 0;
                     _fired4 = false;
                     _fired7 = false;
                     return;
                 }
-
-                _totalConsecutive++;
 
                 if (_runDir == 0)
                 {
@@ -1046,9 +1039,11 @@ namespace SolTempo.Audio
                 }
                 else
                 {
-                    // Direction reversed
+                    // Direction reversed — start new run, allow Seven to fire again
                     _runLength = 2;
                     _runDir = dir;
+                    _fired4 = false;
+                    _fired7 = false;
                 }
 
                 // — Fire events —
@@ -1068,27 +1063,28 @@ namespace SolTempo.Audio
                 if (_runLength == 7 && !_fired7)
                 {
                     _fired7 = true;
+                    _completedSevenRuns++;
                     _raiseSequence(
                         NoteSequenceEventKind.SevenConsecutiveNotes,
                         7,
                         _letters.AsSpan(_count - 7, 7),
                         _midiNotes.AsSpan(_count - 7, 7));
-                }
 
-                if (_totalConsecutive == 14)
-                {
-                    _raiseSequence(
-                        NoteSequenceEventKind.FourteenConsecutiveNotes,
-                        14,
-                        _letters.AsSpan(_count - 14, 14),
-                        _midiNotes.AsSpan(_count - 14, 14));
-                    
-                    // Reset total consecutive after hitting 14 so it can trigger again later
-                    _totalConsecutive = 1;
-                    _runLength = 1;
-                    _runDir = 0;
-                    _fired4 = false;
-                    _fired7 = false;
+                    if (_completedSevenRuns == 2)
+                    {
+                        _raiseSequence(
+                            NoteSequenceEventKind.FourteenConsecutiveNotes,
+                            14,
+                            _letters.AsSpan(_count - 14, 14),
+                            _midiNotes.AsSpan(_count - 14, 14));
+
+                        // Reset so it can trigger again later
+                        _completedSevenRuns = 0;
+                        _runLength = 1;
+                        _runDir = 0;
+                        _fired4 = false;
+                        _fired7 = false;
+                    }
                 }
             }
 
