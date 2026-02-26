@@ -20,6 +20,8 @@ public class LayerWIthEffects : SkiaLayer
             // Auto-stop once all pieces have fallen out after spawning was disabled
             if (!_confetti.IsSpawning && !_confetti.HasPieces)
                 _isConfettiActive = false;
+
+            Update();
         }
     }
 
