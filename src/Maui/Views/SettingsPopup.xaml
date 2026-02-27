@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <views:AnimatedPopup
-    x:Class="ShadersCamera.Views.SettingsPopup"
+    x:Class="SolTempo.UI.SettingsPopup"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
     xmlns:effects="clr-namespace:SolTempo.Effects"
     xmlns:ui="clr-namespace:SolTempo.UI"
-    xmlns:views="clr-namespace:ShadersCamera.Views"
+    xmlns:views="clr-namespace:SolTempo.UI"
     BackgroundColor="#44000000"
     HorizontalOptions="Fill"
     Tapped="AudioPageSettings_OnTapped"
@@ -22,21 +22,23 @@
 
         </draw:SkiaControl.VisualEffects>-->
 
-        <draw:SkiaLayer HorizontalOptions="Center" VerticalOptions="Center">
+        <draw:SkiaLayer
+            Margin="16,120"
+            HorizontalOptions="Center"
+            VerticalOptions="Center">
 
             <draw:SkiaShape
-                Margin="8,0"
                 BackgroundColor="Black"
                 BlockGesturesBelow="True"
                 CornerRadius="24"
-                HorizontalOptions="Center"
-                MaximumHeightRequest="500"
-                MaximumWidthRequest="500"
+                HeightRequest="800"
+                MinimumHeightRequest="300"
                 MinimumWidthRequest="300"
                 StrokeColor="Goldenrod"
                 StrokeWidth="1"
                 UseCache="Operations"
-                VerticalOptions="Center">
+                VerticalOptions="Start"
+                WidthRequest="500">
 
                 <draw:SkiaScroll HorizontalOptions="Fill">
 
@@ -300,6 +302,7 @@
 
             </draw:SkiaShape>
 
+            <!--  CLOSE BTN  -->
             <draw:SkiaShape
                 BackgroundColor="Black"
                 HorizontalOptions="End"
@@ -307,7 +310,7 @@
                 StrokeColor="Goldenrod"
                 StrokeWidth="1"
                 Tapped="TappedClose"
-                TranslationX="0"
+                TranslationX="10"
                 TranslationY="-10"
                 Type="Circle"
                 UseCache="Image"

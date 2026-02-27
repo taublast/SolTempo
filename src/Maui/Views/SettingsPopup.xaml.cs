@@ -5,7 +5,7 @@ using SolTempo.Resources.Strings;
 using SolTempo.UI;
 
 
-namespace ShadersCamera.Views;
+namespace SolTempo.UI;
 
 public partial class SettingsPopup : AnimatedPopup
 {

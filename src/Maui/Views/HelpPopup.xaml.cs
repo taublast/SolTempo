@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace ShadersCamera.Views;
+namespace SolTempo.UI;
 
  
 
