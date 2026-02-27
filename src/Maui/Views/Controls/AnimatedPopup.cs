@@ -1,4 +1,4 @@
-namespace ShadersCamera.Views;
+namespace SolTempo.UI;
 
 
 public class DebugLayer : SkiaLayer
