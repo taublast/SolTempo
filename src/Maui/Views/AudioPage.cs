@@ -3,6 +3,7 @@ using System.Diagnostics;
 using DrawnUi.Camera;
 using DrawnUi.Controls;
 using DrawnUi.Views;
+using SolTempo.UI;
 using SolTempo.Audio;
 using SolTempo.Helpers;
 using SolTempo.Resources.Strings;
@@ -236,6 +237,64 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         }
     }
 
+#if DEBUG
 
- 
+    private ShaderEditorPage _editor;
+    private SkiaShaderEffect _editableShader;
+
+    public void OpenShaderEditor(SkiaShaderEffect shader)
+    {
+        _editableShader = shader;
+        if (_editableShader != null)
+        {
+            var code = shader.LoadedCode;
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _editor = new ShaderEditorPage(code, ChangeShaderCode);
+                OpenPageInNewWindow(_editor, "Shader Editor");
+            });
+        }
+    }
+
+    public void ChangeShaderCode(string code)
+    {
+        if (_editableShader==null)
+        {
+            return;
+        }
+
+        //do not load from file anymore
+        _editableShader.ShaderSource = null;
+        //set our own code
+        _editableShader.ShaderCode = code;
+    }
+
+    public static void OpenPageInNewWindow(ContentPage page,
+        string title = "Editor")
+    {
+#if WINDOWS || MACCATALYST
+            var window = new Window(page) { Title = title };
+            
+            if (page is ShaderEditorPage)
+            {
+                window.Width = 800;
+                window.Height = 800;
+                window.MinimumWidth = 600;
+                window.MinimumHeight = 400;
+                
+                var mainWindow = Application.Current?.Windows?.FirstOrDefault();
+                if (mainWindow != null)
+                {
+                    window.X = mainWindow.X + mainWindow.Width + 20; 
+                    window.Y = mainWindow.Y;  
+                }
+            }
+            
+            Application.Current.OpenWindow(window);
+#endif
+    }
+
+#endif
+
+
 }
