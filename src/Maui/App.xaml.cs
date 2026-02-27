@@ -24,20 +24,6 @@ namespace SolTempo
         void StartSession()
         {
             _sessionStart = DateTime.UtcNow;
-            TryRequestRating();
-        }
-
-        static void TryRequestRating()
-        {
-            //if (UserSettings.Current.TotalUsageSeconds >= 3600 && !UserSettings.Current.RatingRequested)
-            {
-                //UserSettings.Current.RatingRequested = true;
-                //UserSettings.Save();
-                MainThread.BeginInvokeOnMainThread(async () =>
-                {
-                    await AppRating.Default.PerformInAppRateAsync();
-                });
-            }
         }
 
         void EndSession()
