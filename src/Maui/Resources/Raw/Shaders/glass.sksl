@@ -132,7 +132,9 @@ half4 main(float2 fragCoord) {
     local.y *= iImageResolution.x / iImageResolution.y;
 
     // Radial curvature refraction
+    // float r = length(local);  //no tiling
     float r = clamp(length(local), 0.0, 1.0);  // removed redundant *1.0
+
     float curvature = pow(r, 1.0);             // note: this is currently identity — could be removed
     float2 domeNormal = normalize(local) * curvature;
     float eta = 1.0 / 1.5;
@@ -145,11 +147,14 @@ half4 main(float2 fragCoord) {
     float contourFalloff = exp(-abs(dist) * 0.4);
     float2 normal = getNormal(inputCoord, center, size, radiusInPixels);
     float2 domeNormalContour = normal * pow(contourFalloff, 1.5);
-    float2 refractVecContour = refract(float2(0.0), domeNormalContour, eta);
+
+    // edges contoured
+    float2 refractVecContour = refract(float2(-iDepth/50), domeNormalContour, eta);
+
     float2 uvContour = inputCoord + refractVecContour * (zoomDisplace * 1.167) * iDepth * contourFalloff;
 
     // Blend refractions
-    float edgeWeight    = smoothstep(0.0, 1.0, abs(dist));
+    float edgeWeight    = smoothstep(0.1, 1.0, abs(dist));
     float radialWeight  = smoothstep(0.5, 1.0, r);
     float combinedWeight = clamp(edgeWeight - radialWeight * 0.5, 0.0, 1.0);
     float2 refractUV = mix(curvedRefractUV, uvContour, combinedWeight);
