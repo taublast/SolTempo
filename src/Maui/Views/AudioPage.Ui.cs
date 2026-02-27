@@ -93,6 +93,9 @@ public partial class AudioPage
     public AudioPage()
     {
         Title = ResStrings.AppTitle;
+
+        //iOS statusbar and bottom insets color
+        BackgroundColor = Colors.Black;
     }
 
     private void CreateContent()
