@@ -38,8 +38,12 @@ namespace SolTempo
                     fonts.AddFont("Neucha-Regular.ttf", AppFonts.Default);
                     fonts.AddFont("ShantellSans-Bold.ttf", AppFonts.Bold);
                     fonts.AddFont("NotoSansDisplay-Regular.ttf", AppFonts.Title);
- 
                 });
+
+
+#if IOS //spare battery because apple metal is draining much. android is not affected at the same level.
+            Super.MaxFps = 30;
+#endif
 
             builder.UseDrawnUi(new()
             {
