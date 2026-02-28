@@ -18,7 +18,18 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
 
+    <UseSource>false</UseSource>
+
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseSource)' != 'true'">
+    <PackageReference Include="DrawnUi.Maui.Camera" Version="1.9.1.2" />
+  </ItemGroup>
+
+
+  <ItemGroup Condition="'$(UseSource)' == 'true'">
+    <ProjectReference Include="..\..\..\DrawnUi.Maui\src\Maui\Addons\DrawnUi.Maui.Camera\DrawnUi.Maui.Camera.csproj" />
+  </ItemGroup>
 
   <PropertyGroup>
     <WindowsPackageType>None</WindowsPackageType>
@@ -61,15 +72,15 @@
     <ProvisioningType>manual</ProvisioningType>
   </PropertyGroup>
 
-  <!--<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
-    <CodesignKey>Apple Distribution: NIKOLAY KOVALSKIY (F5H2D34D9G)</CodesignKey>
-  </PropertyGroup>-->
-
-
+  <!-- CHANGE TO SIGN-->
   <PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+    <CodesignKey>Apple Distribution: NIKOLAY KOVALSKIY (F5H2D34D9G)</CodesignKey>
+  </PropertyGroup>
+
+  <!--<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
     <CodesignKey>Apple Development: Created via API (R2DBJ49UL4)</CodesignKey>
     <CodesignProvision></CodesignProvision>
-  </PropertyGroup>
+  </PropertyGroup>-->
 
 
 
@@ -104,6 +115,12 @@
   </ItemGroup>
 
 
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Link="README.md" />
+  </ItemGroup>
+
+
   <ItemGroup>
     <PackageReference Include="FluentColors.Maui" Version="1.0.0.6">
       <PrivateAssets>all</PrivateAssets>
@@ -129,10 +146,6 @@
       <LastGenOutput>ResStrings.Designer.cs</LastGenOutput>
       <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\DrawnUi.Maui\src\Maui\Addons\DrawnUi.Maui.Camera\DrawnUi.Maui.Camera.csproj" />
   </ItemGroup>
 
 
