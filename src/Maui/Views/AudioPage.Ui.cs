@@ -401,7 +401,7 @@ public partial class AudioPage
                     }
                 }.Assign(out _achievementBanner),
 
-#if xDEBUG
+#if DEBUG
                 new SkiaLabelFps()
                 {
                     Margin = new(0, 0, 4, 24),
