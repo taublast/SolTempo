@@ -1,8 +1,8 @@
 ﻿# SolTempo
 
-<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/818f4fd4-5b33-48f7-9999-98a817e4c54d" />
-
 Support: [ask your question here](https://github.com/taublast/SolTempo/discussions)
+
+<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/a77d8f9c-f39e-4a6e-ac20-57351c4888f5" />
 
 ---
 
