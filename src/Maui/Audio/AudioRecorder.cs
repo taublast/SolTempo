@@ -3,6 +3,9 @@ using DrawnUi.Camera;
 
 namespace SolTempo.Audio
 {
+    /// <summary>
+    /// AudioRecorder is a SkiaCamera subclass that captures audio from the microphone.
+    /// </summary>
     public partial class AudioRecorder : SkiaCamera
     {
         public AudioRecorder()

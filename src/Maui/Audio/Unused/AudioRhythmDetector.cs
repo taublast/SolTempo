@@ -65,6 +65,10 @@ namespace SolTempo.Audio
 
         public bool UseGain { get; set; } = true;
         public int Skin { get; set; } = 0;
+        public void Demo()
+        {
+            // NotImplemented;
+        }
 
         public void Reset()
         {

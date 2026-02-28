@@ -1,5 +1,9 @@
 namespace SolTempo.Effects;
 
+/// <summary>
+/// Plays the shader effect animation when the parent control appears (becomes visible).
+/// We don't use it in the end. Code kept for possible future use.
+/// </summary>
 public class PlayOnAppearingShaderEffect : AnimatedShaderEffect
 {
     public PlayOnAppearingShaderEffect()
@@ -34,11 +38,7 @@ public class PlayOnAppearingShaderEffect : AnimatedShaderEffect
         }
     }
 
-
-
     private bool _started;
-
- 
 }
 
 public class PlayOnDisappearingShaderEffect : AnimatedShaderEffect
@@ -85,6 +85,7 @@ public class PlayOnDisappearingShaderEffect : AnimatedShaderEffect
     protected override SKRuntimeEffectUniforms CreateUniforms(SKRect destination)
     {
         var uniforms = base.CreateUniforms(destination);
+
         uniforms["iCenter"] = new float[] { Center.X, Center.Y };
         return uniforms;
     }

@@ -4,6 +4,9 @@ using SolTempo.UI;
 
 namespace SolTempo.Audio
 {
+    /// <summary>
+    /// AudioVisualizer is a SkiaLayout that renders an IAudioVisualizer implementation.
+    /// </summary>
     public class AudioVisualizer : SkiaLayout
     {
         public IAudioVisualizer Visualizer { get; protected set; }

@@ -10,9 +10,9 @@ Will also detect the beats per minute (BPM) tempo of the music being played if s
 
 - Switch notes/bpm detection modules by tapping on the lower left menu button.
 
-- Hold your instrument close to the device microphone for the most accurate readings. You can also turn ON audio gain in settings.
+- Hold your instrument close to the device microphone for the most accurate readings. Turn ON audio gain in settings if needed.
 
-- When you tap on display card the module will reset the detection and start listening from the start.
+- Tap on display card the module will reset the detection and start listening from the start.
 
 ---
 

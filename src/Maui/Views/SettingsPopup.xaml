@@ -31,7 +31,7 @@
                 BackgroundColor="Black"
                 BlockGesturesBelow="True"
                 CornerRadius="24"
-                HeightRequest="800"
+                MaximumHeightRequest="800"
                 MinimumHeightRequest="300"
                 MinimumWidthRequest="300"
                 StrokeColor="Goldenrod"

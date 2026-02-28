@@ -42,6 +42,11 @@ namespace SolTempo.Audio
         private SKPaint _paintText;
         private SKPaint _paintBg;
 
+        public void Demo()
+        {
+            // NotImplemented;
+        }
+
         public void AddSample(AudioSample sample)
         {
             int sampleCount = sample.Data.Length / 2;

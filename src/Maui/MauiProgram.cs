@@ -66,6 +66,12 @@ namespace SolTempo
             return builder.Build();
         }
 
-        public static readonly string ShadersFolder = "Shaders";
+        public static string Build
+        {
+            get
+            {
+                return $"Build {AppInfo.Current.BuildString}";
+            }
+        }
     }
 }

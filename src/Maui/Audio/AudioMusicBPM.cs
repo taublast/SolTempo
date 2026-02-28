@@ -103,6 +103,10 @@ namespace SolTempo.Audio
             if (_bpmCount < MaxBpmHistory) _bpmCount++;
         }
 
+        public void Demo()
+        {
+            // NotImplemented;
+        }
         public AudioMusicBPM()
         {
             UseCache = SkiaCacheType.Operations;

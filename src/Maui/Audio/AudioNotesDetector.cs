@@ -5,45 +5,10 @@ using System.Diagnostics;
 
 namespace SolTempo.Audio
 {
-
-    public enum NoteSequenceEventKind
-    {
-        FourNoteRunAscending,
-        FourNoteRunDescending,
-        SevenConsecutiveNotes,
-        FourteenConsecutiveNotes,
-    }
-
-
-    public class DebugLabel : SkiaLabel
-    {
-        public override ScaledSize OnMeasuring(float widthConstraint, float heightConstraint, float scale)
-        {
-            var ret = base.OnMeasuring(widthConstraint, heightConstraint, scale);
-
-            if (PaintDefault != null)
-            {
-                var m = PaintDefault.FontMetrics;
-                var hBounds = new SkiaSharp.SKRect();
-
-                PaintDefault.MeasureText("H", ref hBounds);
-
-                Debug.WriteLine($"[DebugLabel] font {PaintDefault.Typeface.FamilyName}");
-                Debug.WriteLine($"[DebugLabel] scale={scale:F2} TextSize={PaintDefault.TextSize:F1}");
-                Debug.WriteLine($"[DebugLabel] Ascent={m.Ascent:F2} Descent={m.Descent:F2}");
-                Debug.WriteLine($"[DebugLabel] Top={m.Top:F2} Bottom={m.Bottom:F2}");
-                Debug.WriteLine($"[DebugLabel] CapHeight={m.CapHeight:F2} XHeight={m.XHeight:F2} Leading={m.Leading:F2}");
-                Debug.WriteLine($"[DebugLabel] H.ink top={hBounds.Top:F2} bottom={hBounds.Bottom:F2}");
-                Debug.WriteLine($"[DebugLabel] LineHeightPixels={LineHeightPixels:F2} ContentSize.Pixels.Height={ret.Pixels.Height:F2}");
-            }
-
-            return ret;
-        }
-    }
-
     /// <summary>
     /// Musical Note Detector (Tuner)
     /// Uses AMDF (Average Magnitude Difference Function) with Parabolic Interpolation for accurate pitch.
+    /// AudioNotesDetector is a SkiaLayer that implements IAudioVisualizer to detect musical notes from audio input.
     /// </summary>
     public class AudioNotesDetector : SkiaLayer, IAudioVisualizer, IDisposable
     {
@@ -767,6 +732,84 @@ namespace SolTempo.Audio
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// To make a screenshot on iPad simulator :)
+        /// </summary>
+        public void Demo()
+        {
+            // Option A: Middle C (MIDI 60) — most common reference "Do" in many contexts
+            const int demoMidiNote = 60;           // C4
+            const float demoFrequency = 261.63f;   // A440 tuning → C4
+            const float demoCents = 12f;       // slightly sharp for realism
+
+            // Option B: concert A as reference (uncomment if you prefer)
+            // const int demoMidiNote = 69;
+            // const float demoFrequency = 440f;
+            // const float demoCents     = 0f;
+
+            // Force internal state — minimal set needed to look realistic
+            _currentMidiNote = demoMidiNote;
+            _currentFrequency = demoFrequency;
+            _currentCents = demoCents;
+            _smoothCents = demoCents;
+
+            // Make vote buffer look like we've had stable votes for a while
+            int votesNeeded = Math.Max(_voteThreshold, _voteChangeThreshold);
+            for (int i = 0; i < _voteWindowScans; i++)
+            {
+                _noteVoteBuffer[i] = demoMidiNote;
+            }
+            _voteBufferHead = _voteWindowScans;   // looks like we've just filled the window
+
+            // Update visible note name / solfege
+            int noteIndex = demoMidiNote % 12;
+            if (noteIndex < 0) noteIndex += 12;
+
+            _detectedNoteLetterName = NoteNames[noteIndex];
+
+            switch (Notation)
+            {
+            case 1: _detectedNoteSolfegeName = SolfegeNames[noteIndex]; break;
+            case 2: _detectedNoteSolfegeName = SolfegeFloat[noteIndex]; break;
+            case 3: _detectedNoteSolfegeName = SolfegeCyr[noteIndex]; break;
+            case 4: _detectedNoteSolfegeName = SolfegeNums[noteIndex]; break;
+            default: _detectedNoteSolfegeName = NoteNames[noteIndex]; break;
+            }
+
+            // Make UI believe we have strong signal
+            HasSignal = true;
+            _displayHasSignal = true;
+            _displayMidiNote = demoMidiNote;
+            _displayFrequency = demoFrequency;
+            _displayCents = demoCents;
+
+            // Choose nice in-tune color
+            _displayColor = Colors.Lime;
+            _displayColorSK = SKColors.Lime;
+
+            // Optional: push one stable note into the sequence tracker
+            // (so four-note-run / seven-note-run can be tested immediately after)
+            char naturalLetter = ToNaturalLetter(noteIndex);
+            _sequenceTracker.OnStableNote(demoMidiNote, naturalLetter);
+
+            // Finally — update labels (same logic as in AddSample)
+            _labelNote.TextColor = _displayColor;
+            _labelNote.Text = _detectedNoteSolfegeName;
+
+            _labelFrequency.TextColor = _colorFreqOnGray;
+            _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
+
+            _labelCents.Text = $"{_displayCents:+0;-0} cents";
+
+            // Optional: force redraw / layout pass if needed in your control
+            Update();           // most Skia controls react to this
+                                // Invalidate();    // alternative name in some versions
+
+            // You can now call DetectPitch() right after Demo() if you want
+            // to see how the sequence tracker reacts to the next notes
+            // DetectPitch();
         }
 
         /// <summary>

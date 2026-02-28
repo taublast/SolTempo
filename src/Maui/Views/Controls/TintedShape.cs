@@ -3,6 +3,9 @@ using AppoMobi.Maui.Gestures;
 
 namespace SolTempo.UI;
 
+/// <summary>
+/// Shape with a tint color and hover/tap effects.
+/// </summary>
 public class TintedShape : SkiaShape
 {
     public TintedShape()

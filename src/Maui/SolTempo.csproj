@@ -30,10 +30,6 @@
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net*-ios|AnyCPU'">
-    <CreatePackage>false</CreatePackage>
-    <CodesignKey>iPhone Developer</CodesignKey>
-  </PropertyGroup>
 
   <ItemGroup>
     <MauiImage Include="Resources\Raw\Svg\dotnet_bot.svg">
@@ -65,11 +61,16 @@
     <ProvisioningType>manual</ProvisioningType>
   </PropertyGroup>
 
+  <!--<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+    <CodesignKey>Apple Distribution: NIKOLAY KOVALSKIY (F5H2D34D9G)</CodesignKey>
+  </PropertyGroup>-->
+
 
   <PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
-    <CodesignKey>iPhone Distribution</CodesignKey>
+    <CodesignKey>Apple Development: Created via API (R2DBJ49UL4)</CodesignKey>
     <CodesignProvision></CodesignProvision>
   </PropertyGroup>
+
 
 
   <ItemGroup>
@@ -121,12 +122,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ResStrings.resx</DependentUpon>
     </Compile>
-    <Compile Update="Views\SettingsPopup.xaml.cs">
-      <DependentUpon>SettingsPopup.xaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\HelpPopup.xaml.cs">
-      <DependentUpon>HelpPopup.xaml</DependentUpon>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -137,14 +132,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="UI\AudioPageSettingsPopup - Copy.xaml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\..\DrawnUi.Maui\src\Maui\Addons\DrawnUi.Maui.Camera\DrawnUi.Maui.Camera.csproj" />
   </ItemGroup>
-
-
 
 
 </Project>

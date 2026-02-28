@@ -118,6 +118,10 @@ namespace SolTempo.Audio
             System.Threading.Interlocked.Exchange(ref _swapRequested, 1);
         }
 
+        public void Demo()
+        {
+            // NotImplemented;
+        }
         public bool Render(SKCanvas canvas, SKRect viewport, float scale)
         {
             if (viewport.Width <= 0 || viewport.Height <= 0)

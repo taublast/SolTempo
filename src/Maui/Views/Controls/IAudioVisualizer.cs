@@ -23,5 +23,10 @@ namespace SolTempo.UI
 
         bool UseGain { get; set; }
         int Skin { get; set; }
+
+        /// <summary>
+        /// Mock and other..
+        /// </summary>
+        void Demo();
     }
 }

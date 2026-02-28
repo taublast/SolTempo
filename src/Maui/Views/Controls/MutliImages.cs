@@ -2,6 +2,8 @@ namespace SolTempo.UI;
 
 /// <summary>
 /// Indended to preload all images at startup to avoid lag spike when switching later
+/// We dont use it in the end, because we have a single background image,
+/// but it can be useful if you have a lot of images to switch between and want to avoid any lag on first display.
 /// </summary>
 public class MutliImages : SkiaLayer
 {

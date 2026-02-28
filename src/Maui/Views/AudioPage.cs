@@ -1,12 +1,11 @@
-using System.ComponentModel;
-using System.Diagnostics;
 using DrawnUi.Camera;
-using DrawnUi.Controls;
 using DrawnUi.Views;
-using SolTempo.UI;
 using SolTempo.Audio;
+using SolTempo.Effects;
 using SolTempo.Helpers;
 using SolTempo.Resources.Strings;
+using System.Diagnostics;
+ 
 
 namespace SolTempo.UI;
 
@@ -297,4 +296,57 @@ public partial class AudioPage : BasePageReloadable, IDisposable
 #endif
 
 
+    private void TappedSwitchModules()    
+    {
+        lock (lockNav)
+        {
+            if (IsBusy)
+            {
+                return;
+            }
+
+            IsBusy = true;
+
+            var fx = new TransitionEffect();
+            fx.Midpoint += (s, e) =>
+            {
+                ToggleVisualizerMode();
+                fx.AquiredBackground = false;
+            };
+            fx.Completed += (s, e) =>
+            {
+                _mainStack.VisualEffects.Remove(fx);
+                _mainStack.DisposeObject(fx);
+
+                IsBusy = false;
+            };
+
+            _mainStack.VisualEffects.Add(fx);
+            fx.Play();
+        }
+    }
+
+    private void TappedSettings()
+    {
+        _settingsPopup?.Show();
+#if DEBUG && WINDOWS
+        OpenShaderEditor(shaderGlass);
+#endif
+    }
+
+    private void TappedHelp()
+    {
+        //Demo();
+        //return;
+        
+        _helpPopup?.Show();
+    }
+
+    void Demo()
+    {
+        NotesModule?.Demo();
+        ShowAchievementBanner(ResStrings.SequenceTwoOctaves);
+        PlayConfetti();
+        PlayAchievementEffect();
+    }
 }

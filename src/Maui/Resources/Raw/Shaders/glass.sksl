@@ -5,15 +5,18 @@ uniform float2 iImageResolution; // iImage1 resolution (pixels)
 uniform shader iImage1;          // Texture
 uniform float2 iOffset;          // Top-left corner of DrawingRect
 uniform float2 iOrigin;          // Mouse drag started here
+
 uniform float  iCornerRadius;    // Corner radius in pixels (pre-scaled by RenderingScale on C# side)
-uniform float  iEmboss;     // Refraction/emboss displacement as % of image width (0=flat, 10=default, density-independent)
-uniform float  iDepth;      // 3D depth/emboss intensity (0.0 = flat, 1.0 = normal, 2.0+ = pronounced)
+uniform float  iEmboss;     // Refraction/iEmboss displacement as % of image width (0=flat, 10=default, density-independent)
+uniform float  iDepth;      // 3D iDepth/iEmboss intensity (0.0 = flat, 1.0 = normal, 2.0+ = pronounced)
 uniform float  iBlurStrength;    // Blur intensity multiplier (1.0 = default, 0.0 = no blur, 2.0 = double)
 uniform float  iOpacity;    // Glass panel opacity (0.0 = fully transparent, 1.0 = fully opaque), default 0.75
+uniform float  iEdgeOpacity;    // default 0.55
+uniform float  iEdgeGlow;    // default 0.95
 uniform float4 iTint;      // Glass tint color (rgb = tint, a = tint strength; a=0 means no tint)
 
 //Originated from MIT licenced https://github.com/bergice/liquidglass
-//Adapted/edited by taublast, still MIT
+//Heavily changed by taublast, still MIT
 
 const float EDGE_DISTANCE = 1.0;  // Distance from image edges (0 = covers entire area)
 
@@ -30,7 +33,7 @@ float roundedBox(float2 uv, float2 center, float2 size, float radius) {
 /// </summary>
 
 half3 blurBackground(float2 uv) {
-    float2 step = 2.8 * iBlurStrength / iImageResolution;   // ← was 2.2, can try 2.5–3.2
+    float2 step = 2.8 * iBlurStrength / iImageResolution; 
 
     half3 center = iImage1.eval(uv).rgb;
 
@@ -102,12 +105,23 @@ float2 getNormal(float2 uv, float2 center, float2 size, float radius) {
     return normalize(gradient);
 }
 
+/// <summary>
+/// Prevents refracted UV from tiling: clamps displaced coordinates to texture bounds.
+/// Edge pixels stretch to fill (zoom/clamp semantics) — no tiling, no falling back to original.
+/// </summary>
+float2 scaledDisplaceUV(float2 displaced, float2 original) {
+    return clamp(displaced, float2(0.0), iImageResolution - 1.0);
+}
+
 // ────────────────────────────────────────────────────────────────
 half4 main(float2 fragCoord) {
 // ────────────────────────────────────────────────────────────────
 
-    float2 renderingScale = iImageResolution.xy / iResolution.xy;
+    float renderingScale = (iImageResolution.xy / iResolution.xy).x;
+
     float2 inputCoord = fragCoord - iOffset;
+
+    float distort = 1.66;
 
     // Minimal setup needed to compute distance & mask
     float radiusInPixels = iCornerRadius;
@@ -127,21 +141,32 @@ half4 main(float2 fragCoord) {
 
     float2 uv = inputCoord / iImageResolution;
 
-    // Now safe to compute perspective-corrected local coordinates
-    float2 local = (inputCoord - center) / size;
-    local.y *= iImageResolution.x / iImageResolution.y;
+    // Separate y-only normalized coord for shadow — always in [-1,1] regardless of aspect.
+    float localYNorm = (inputCoord.y - center.y) / size.y;
+
+    // Two code paths based on the shorter panel dimension in logical points (density-independent).
+    //   Large (shorter side >= 200pt):
+    //     glass2 path — minHalf normalization so r doesn't saturate uniformly
+    //     across wide bands, eliminating the tiling/banding pattern.
+    //     zoomDisplace uses min dimension so displacement stays within texture bounds.
+    //   Small (shorter side < 200pt):
+    //     glass path — aspect-corrected dome looks circular; full-width zoomDisplace
+    //     keeps refraction and glow visible on thin/compact panels.
+    float minDimPoints = min(iResolution.x, iResolution.y);
+    float2 local;
+    float zoomDisplace;
+     
+    local = (inputCoord - center) / size;
+    zoomDisplace = min(iImageResolution.x, iImageResolution.y) * (iEmboss / 100.0);
 
     // Radial curvature refraction
-    // float r = length(local);  //no tiling
-    float r = clamp(length(local), 0.0, 1.0);  // removed redundant *1.0
+    float r = clamp(length(local), 0.0, 1.0);
 
-    float curvature = pow(r, 1.0);             // note: this is currently identity — could be removed
-    float2 domeNormal = normalize(local) * curvature;
+    float2 domeNormal = normalize(local);
     float eta = 1.0 / 1.5;
     float2 incident = -domeNormal;
     float2 refractVec = refract(incident, domeNormal, eta);
-    float zoomDisplace = iImageResolution.x * (iEmboss / 100.0);
-    float2 curvedRefractUV  = inputCoord + refractVec  * zoomDisplace * iDepth;
+    float2 curvedRefractUV  = inputCoord + refractVec  * zoomDisplace * distort;
 
     // Edge contour refraction
     float contourFalloff = exp(-abs(dist) * 0.4);
@@ -150,14 +175,13 @@ half4 main(float2 fragCoord) {
 
     // edges contoured
     float2 refractVecContour = refract(float2(-iDepth/50), domeNormalContour, eta);
-
     float2 uvContour = inputCoord + refractVecContour * (zoomDisplace * 1.167) * iDepth * contourFalloff;
 
     // Blend refractions
     float edgeWeight    = smoothstep(0.1, 1.0, abs(dist));
     float radialWeight  = smoothstep(0.5, 1.0, r);
     float combinedWeight = clamp(edgeWeight - radialWeight * 0.5, 0.0, 1.0);
-    float2 refractUV = mix(curvedRefractUV, uvContour, combinedWeight);
+    float2 refractUV = scaledDisplaceUV(mix(curvedRefractUV, uvContour, combinedWeight), inputCoord);
 
     half3 refracted = iImage1.eval(refractUV).rgb;
     half3 blurred   = blurBackground(refractUV);
@@ -165,7 +189,7 @@ half4 main(float2 fragCoord) {
 
     // Shadow
     float edgeFalloff  = smoothstep(0.01, 0.0, dist);
-    float verticalBand = 1.0 - smoothstep(-1.5, -0.2, local.y);
+    float verticalBand = 1.0 - smoothstep(-1.5, -0.2, localYNorm);
     float topShadow    = edgeFalloff * verticalBand;
     half3 shadowColor  = half3(0.0);
     base = mix(base, shadowColor, topShadow * 0.25 * iDepth);
@@ -173,10 +197,9 @@ half4 main(float2 fragCoord) {
     // Edge glow
     float glowWidthPixels = zoomDisplace * (11.0 / 30.0) * iDepth;
     float edge = 1.0 - smoothstep(0.0, glowWidthPixels, dist * -2.0);
-    half3 edgeSample = iImage1.eval(uvContour).rgb;
-    half3 glow = mix(edgeSample * 5.0, half3(0.5), 0.1);
-    half3 color = mix(base * 1.1, glow * 1.1, edge * 0.25 * iDepth);
-
+    half3 edgeSample = iImage1.eval(scaledDisplaceUV(uvContour, inputCoord)).rgb;
+    half3 glow = mix(edgeSample * 2.5 * iEdgeGlow, half3(0.5), 0.1); //how much we see original background on edges
+    half3 color = mix(base * 1.1, glow * iEdgeGlow, edge * iEdgeOpacity * iDepth);
     // Tint
     color = mix(color, iTint.rgb, iTint.a);
 

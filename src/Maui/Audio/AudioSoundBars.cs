@@ -3,17 +3,19 @@ using SolTempo.UI;
 
 namespace SolTempo.Audio
 {
+
     /// <summary>
-    /// High-resolution frequency spectrum sound bars (music player style).
-    /// Uses Goertzel algorithm to compute energy at logarithmically-spaced
-    /// frequency bins. Bars with energy are ON, bars without are fully OFF,
-    /// creating an organic pattern of active/silent frequency clusters.
-    /// ZERO render allocations, double-buffered.
+    /// AudioSoundBars is a frequency spectrum visualizer with vertical bars representing energy in logarithmic frequency bins.
     /// </summary>
     public class AudioSoundBars : IAudioVisualizer, IDisposable
     {
         public bool UseGain { get; set; } = false;
         public int Skin { get; set; } = 1;
+        public void Demo()
+        {
+            // NotImplemented;
+        }
+
         public bool ShowPeakDots { get; set; } = true;
 
         private const int BarCount = 48;

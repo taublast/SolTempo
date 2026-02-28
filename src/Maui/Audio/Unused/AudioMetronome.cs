@@ -137,6 +137,11 @@ namespace SolTempo.Audio
             return 0f;
         }
 
+        public void Demo()
+        {
+            // NotImplemented;
+        }
+
         public void AddSample(AudioSample sample)
         {
             if (System.Threading.Volatile.Read(ref _resetting) != 0)

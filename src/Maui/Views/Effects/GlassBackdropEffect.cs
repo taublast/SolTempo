@@ -48,12 +48,46 @@ public class GlassBackdropEffect : SkiaShaderEffect
         0.75f,
         propertyChanged: OnPropertyChanged);
 
+
     public static readonly BindableProperty TintProperty = BindableProperty.Create(
         nameof(Tint),
         typeof(Color),
         typeof(GlassBackdropEffect),
         Colors.Transparent,
         propertyChanged: OnPropertyChanged);
+
+
+    public static readonly BindableProperty EdgeOpacityProperty = BindableProperty.Create(
+        nameof(EdgeOpacity),
+        typeof(float),
+        typeof(GlassBackdropEffect),
+        0.5f,
+        propertyChanged: OnPropertyChanged);
+
+    /// <summary>
+    /// Default is 0.55
+    /// </summary>
+    public float EdgeOpacity
+    {
+        get => (float)GetValue(EdgeOpacityProperty);
+        set => SetValue(EdgeOpacityProperty, value);
+    }
+
+    public static readonly BindableProperty EdgeGlowProperty = BindableProperty.Create(
+        nameof(EdgeGlow),
+        typeof(float),
+        typeof(GlassBackdropEffect),
+        0.95f,
+        propertyChanged: OnPropertyChanged);
+
+    /// <summary>
+    /// Default is 0.95
+    /// </summary>
+    public float EdgeGlow
+    {
+        get => (float)GetValue(EdgeGlowProperty);
+        set => SetValue(EdgeGlowProperty, value);
+    }
 
     /// <summary>
     /// Gets or sets the corner radius in points (density-independent units).
@@ -110,6 +144,7 @@ public class GlassBackdropEffect : SkiaShaderEffect
         set => SetValue(OpacityProperty, value);
     }
 
+
     /// <summary>
     /// Gets or sets the glass tint color. The alpha channel controls tint strength:
     /// fully transparent = no tint, fully opaque = solid color overlay.
@@ -140,6 +175,8 @@ public class GlassBackdropEffect : SkiaShaderEffect
         uniforms["iDepth"] = Depth;
         uniforms["iBlurStrength"] = BlurStrength;
         uniforms["iOpacity"] = Opacity;
+        uniforms["iEdgeOpacity"] = EdgeOpacity;
+        uniforms["iEdgeGlow"] = EdgeGlow;
 
         var c = Tint;
         _uniformTint[0] = (float)c.Red; _uniformTint[1] = (float)c.Green;

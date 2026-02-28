@@ -1,7 +1,8 @@
 namespace SolTempo.UI;
 
+
 /// <summary>
-/// Do NOT cache, painted non-stop maybe
+/// Layer that can render visual effects like confetti.
 /// </summary>
 public class LayerWIthEffects : SkiaLayer
 {
@@ -25,12 +26,6 @@ public class LayerWIthEffects : SkiaLayer
         }
     }
 
-    public void ToggleConfetti()
-    {
-        bool isFullyOn = _isConfettiActive && (_confetti?.IsSpawning ?? false);
-        EnableConfetti(!isFullyOn);
-    }
-
     public void EnableConfetti(bool state)
     {
         if (state)
@@ -51,6 +46,7 @@ public class LayerWIthEffects : SkiaLayer
     {
         _confetti?.Dispose();
         _confetti = null;
+
         base.OnDisposing();
     }
 
