@@ -4,7 +4,6 @@ using DrawnUi.Infrastructure;
 using DrawnUi.Models;
 using DrawnUi.Views;
 using Plugin.Maui.AppRating;
-using ShadersCamera.Views;
 using SolTempo.Audio;
 using SolTempo.Effects;
 using SolTempo.Helpers;
@@ -20,13 +19,9 @@ public partial class AudioPage
     private MutliImages _background;
     private SkiaShape _takePictureButton;
     private SkiaLabel _statusLabel;
-    private SettingsButton _videoRecordButton;
-    private SettingsButton _audioCodecButton;
     private SkiaLayer _previewOverlay;
     private SkiaImage _previewImage;
     private SkiaImage _previewThumbnail;
-    private SettingsButton _preRecordingToggleButton;
-    private SettingsButton _preRecordingDurationButton;
     private SkiaLabel _captionsLabel;
     private SkiaDrawer _settingsDrawer;
     private SkiaViewSwitcher _settingsTabs;
@@ -44,7 +39,7 @@ public partial class AudioPage
     private SettingsPopup _settingsPopup;
     private HelpPopup _helpPopup;
     private LayerWIthEffects _mainStack;
-
+    private SkiaShaderEffect shaderGlass;
     private Achievements _achievementEngine;
     private SkiaShape _achievementBanner;
     private SkiaLabel _achievementBannerLabel;
@@ -135,8 +130,9 @@ public partial class AudioPage
                         //NOTES
                         new SkiaShape()
                         {
+                            WidthRequest=900,
+                            HorizontalOptions = LayoutOptions.Center,
                             Margin = new (16,16,16,0),
-                            HorizontalOptions = LayoutOptions.Fill,
                             HeightRequest = 375,
                             CornerRadius = 24,
                             Children =
@@ -150,13 +146,15 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
+                                            EdgeOpacity = 0.55f,
+                                            EdgeGlow = 0.95f,
                                             Emboss = 9.2f,
                                             BlurStrength = 1.0f,
                                             Opacity = 0.9f,
                                             Tint = Colors.Black.WithAlpha(0.33f),
                                             CornerRadius = 24,
                                             Depth = 1.66f
-                                        }
+                                        }.Assign(out shaderGlass) //for dev shader editor
                                     }
                                 },
 
@@ -169,32 +167,14 @@ public partial class AudioPage
 
                             }
                         }.Assign(out _musicNotesWrapper),
-                       
-                        //new AudioVisualizer(new AudioRhythmDetector())
-                        //{
-                        //    Margin = new (16,16,16,0),
-                        //    HorizontalOptions = LayoutOptions.Fill,
-                        //    HeightRequest = 350,
-                        //    BackgroundColor = Color.Parse("#22000000"),
-                        //    IsVisible = false,
-                        //}.Assign(out _rhythmDetector),
-
-                        //new AudioVisualizer(new AudioMetronome())
-                        //{
-                        //    Opacity = 0.9,
-                        //    Margin = new (16,16,16,0),
-                        //    HorizontalOptions = LayoutOptions.Fill,
-                        //    HeightRequest = 350,
-                        //    BackgroundColor = Color.Parse("#22000000"),
-                        //    IsVisible = false,
-                        //}.Assign(out _metronome),
 
                         // BPM MUSIC
                         new SkiaShape()
                         {
                             IsVisible=false,
+                            WidthRequest=900,
                             Margin = new (16,16,16,0),
-                            HorizontalOptions = LayoutOptions.Fill,
+                            HorizontalOptions = LayoutOptions.Center,
                             HeightRequest = 320,
 
                             Children =
@@ -245,7 +225,6 @@ public partial class AudioPage
                             HeightRequest = 240,
                         }.Assign(out _equalizer),
 
-
                         // Bottom Menu Bar
                         new SkiaShape()
                         {
@@ -267,13 +246,15 @@ public partial class AudioPage
                                     {
                                         new GlassBackdropEffect()
                                         {
-                                            Emboss = 13.5f,
+                                            EdgeOpacity = 0.58f,
+                                            EdgeGlow = 0.85f,
+                                            Depth = 1.66f,
+                                            Emboss = 18.5f, //affects border width
                                             BlurStrength = 1.0f,
                                             Opacity = 0.9f,
                                             Tint = Colors.White.WithAlpha(0.05f),
-                                            CornerRadius = 32,  // Match parent SkiaShape
-                                            Depth = 0.75f   // 3D emboss intensity (0.0-2.0+)
-                                        }
+                                            CornerRadius = 32,
+                                        }//.Assign(out shaderGlass) //for dev shader editor
                                     }
                                 },
 
@@ -312,33 +293,7 @@ public partial class AudioPage
                                         .Assign(out _modeButton)
                                         .OnTapped(me =>
                                         {
-                                            lock (lockNav)
-                                            {
-                                                if (IsBusy)
-                                                {
-                                                    return;
-                                                }
-
-                                                IsBusy = true;
-
-                                                var fx = new TransitionEffect();
-                                                fx.Midpoint  += (s, e) =>
-                                                {
-                                                    ToggleVisualizerMode();
-                                                    fx.AquiredBackground = false;
-                                                };
-                                                fx.Completed += (s, e) =>
-                                                {
-                                                    _mainStack.VisualEffects.Remove(fx);
-                                                    _mainStack.DisposeObject(fx);
-
-                                                    IsBusy = false;
-                                                };
-
-                                                _mainStack.VisualEffects.Add(fx);
-                                                fx.Play();
-                                            }
-
+                                            TappedSwitchModules();
                                         }),
 
                                         // Settings Button
@@ -365,7 +320,7 @@ public partial class AudioPage
                                         }
                                         .OnTapped(me =>
                                         {
-                                            _settingsPopup?.Show();
+                                            TappedSettings();
                                         }),
 
                                         // Help Button
@@ -393,7 +348,7 @@ public partial class AudioPage
                                         }
                                         .OnTapped(me =>
                                         {
-                                            _helpPopup?.Show();
+                                            TappedHelp();
                                         }),
 
 
@@ -480,6 +435,7 @@ public partial class AudioPage
                     //for fast use in transitions
                     SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl");
 
+#if ANDROID || IOS
                     if (UserSettings.Current.TotalUsageSeconds >= 3600 && !UserSettings.Current.RatingRequested)
                     {
                         UserSettings.Current.RatingRequested = true;
@@ -496,6 +452,7 @@ public partial class AudioPage
                             }
                         });
                     }
+#endif
 
                 });
             }
@@ -636,8 +593,7 @@ public partial class AudioPage
         Register(NoteSequenceEventKind.SevenConsecutiveNotes, ResStrings.SequenceOctave,
             () =>
             {
-                _mainStack.EnableConfetti(true);
-                LauchTimerStopEffect(6);
+                PlayConfetti();
             });
 
         Register(NoteSequenceEventKind.FourteenConsecutiveNotes, ResStrings.SequenceTwoOctaves,
@@ -645,6 +601,12 @@ public partial class AudioPage
             {
                 PlayAchievementEffect();
             });
+    }
+
+    public void PlayConfetti()
+    {
+        _mainStack.EnableConfetti(true);
+        LauchTimerStopEffect(6);
     }
 
     /// <summary>
