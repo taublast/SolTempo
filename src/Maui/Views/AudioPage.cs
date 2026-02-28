@@ -140,12 +140,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
 
     private void OnRecordingProgress(object sender, TimeSpan duration)
     {
-        if (_videoRecordButton != null && Recorder.IsRecording)
-        {
-            // Update button text with timer in MM:SS format
-            _videoRecordButton.AccessoryIcon = $"🛑";
-            _videoRecordButton.Text = $"Stop ({duration:mm\\:ss})";
-        }
+        //one day maybe could add recording to this app, skiacamera support that np
     }
 
     private void ShowPreviewOverlay(SkiaSharp.SKImage image)
@@ -160,81 +155,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         }
     }
            
-    private async Task SelectAudioCodec()
-    {
-        MainThread.BeginInvokeOnMainThread(async () =>
-        {
-            try
-            {
-                var codecs = await Recorder.GetAvailableAudioCodecsAsync();
-
-                if (codecs?.Count > 0)
-                {
-                    // Prefix the list with "System Default" option
-                    var options = new string[codecs.Count + 1];
-                    options[0] = "System Default";
-                    for (int i = 0; i < codecs.Count; i++)
-                    {
-                        options[i + 1] = codecs[i];
-                    }
-
-                    var result = await DisplayActionSheet("Select Audio Codec", "Cancel", null, options);
-
-                    if (!string.IsNullOrEmpty(result) && result != "Cancel")
-                    {
-                        if (result == "System Default")
-                        {
-                            Recorder.AudioCodecIndex = -1;
-                            _audioCodecButton.Text = "Codec: Default";
-                        }
-                        else
-                        {
-                            // Find the index in our original list
-                            // Careful: option list was shifted by 1
-                            int selectedIndex = -1;
-                            for (int i = 0; i < codecs.Count; i++)
-                            {
-                                if (codecs[i] == result)
-                                {
-                                    selectedIndex = i;
-                                    break;
-                                }
-                            }
-
-                            if (selectedIndex >= 0)
-                            {
-                                Recorder.AudioCodecIndex = selectedIndex;
-                                _audioCodecButton.Text = $"{CodecsHelper.GetShortName(result)}";
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    ShowAlert("No Audio Codecs", "No audio codecs available.");
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowAlert("Error", $"Error getting audio codecs: {ex.Message}");
-            }
-        });
-    }
-
-    public static class CodecsHelper
-    {
-        public static string GetShortName(string fullName)
-        {
-            if (string.IsNullOrEmpty(fullName)) return "";
-            if (fullName.Contains("AAC", StringComparison.OrdinalIgnoreCase)) return "AAC";
-            if (fullName.Contains("MP3", StringComparison.OrdinalIgnoreCase)) return "MP3";
-            if (fullName.Contains("FLAC", StringComparison.OrdinalIgnoreCase)) return "FLAC";
-            if (fullName.Contains("PCM", StringComparison.OrdinalIgnoreCase)) return "PCM";
-            if (fullName.Contains("WMA", StringComparison.OrdinalIgnoreCase)) return "WMA";
-            if (fullName.Contains("LPCM", StringComparison.OrdinalIgnoreCase)) return "LPCM";
-            return fullName.Length > 10 ? fullName.Substring(0, 10) + ".." : fullName;
-        }
-    }
+ 
 
 #if DEBUG
 
