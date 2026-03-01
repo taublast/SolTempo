@@ -57,7 +57,7 @@ Read the blog article - COMING SOON 👈
 ### Development Insights:
 
 * Using `SkiaCamera` audio monitoring and audio transform features
-* Applying backdrop liquid glass-like SKSL shader in realtime
+* Applying backdrop liquid glass-like SKSL shader in real-time
 * Using shaders for animating appear/exit of popups
 * Uisng animated shader for achievement effect
 * Built-in shader live editor when running on Windows
@@ -80,7 +80,7 @@ Contributing to repository is very welcome.
 
 ### Related
 
-* Realtime SKSL shaders: [Filters Camera](https://github.com/taublast/ShadersCamera)
+* Real-time SKSL shaders: [Filters Camera](https://github.com/taublast/ShadersCamera)
 
 * Transition shaders: [ShadersCarousel](https://github.com/taublast/ShadersCarousel)
 
