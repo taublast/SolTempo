@@ -1,42 +1,5 @@
 namespace SolTempo.UI;
 
-
-public class DebugLayer : SkiaLayer
-{
-    public override CachedObject CreateRenderingObject(DrawingContext context, SKRect recordingArea, CachedObject reuseSurfaceFrom,
-        SkiaCacheType usingCacheType, Action<DrawingContext> action)
-    {
-        var created =  base.CreateRenderingObject(context, recordingArea, reuseSurfaceFrom, usingCacheType, action);
-
-        return created;
-    }
-
-    public override void DrawRenderObject(DrawingContext context, CachedObject cache)
-    {
-        base.DrawRenderObject(context, cache);
-    }
-
-    public override void DrawDirectInternal(DrawingContext context, SKRect drawingRect)
-    {
-        base.DrawDirectInternal(context, drawingRect);
-    }
-
-    public override void Update()
-    {
-        base.Update();
-    }
-
-    public override void Render(DrawingContext context)
-    {
-        base.Render(context);
-    }
-
-    protected override void Paint(DrawingContext ctx)
-    {
-        base.Paint(ctx);
-    }
-}
-
 /// <summary>
 /// Create popups that animate when shown or closed.
 /// Animated entrance and exit shaders visual effects.

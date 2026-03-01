@@ -5,7 +5,6 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
-    xmlns:effects="clr-namespace:SolTempo.Effects"
     xmlns:ui="clr-namespace:SolTempo.UI"
     xmlns:views="clr-namespace:SolTempo.UI"
     BackgroundColor="#44000000"
@@ -13,14 +12,7 @@
     Tapped="AudioPageSettings_OnTapped"
     VerticalOptions="Fill">
 
-    <views:DebugLayer x:Name="Animated" VerticalOptions="Fill">
-
-        <!--<draw:SkiaControl.VisualEffects>
-
-            <effects:PlayOnAppearingShaderEffect DurationMs="300"
-                                                 ShaderSource="Shaders\appear_orb.sksl" />
-
-        </draw:SkiaControl.VisualEffects>-->
+    <draw:SkiaLayer x:Name="Animated" VerticalOptions="Fill">
 
         <draw:SkiaLayer
             Margin="16,120"
@@ -330,6 +322,6 @@
 
         </draw:SkiaLayer>
 
-    </views:DebugLayer>
+    </draw:SkiaLayer>
 </views:AnimatedPopup>
 

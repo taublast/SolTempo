@@ -65,9 +65,7 @@
                                 TextColor="Gainsboro"
                                 UseCache="Operations" />
 
-                            <draw:SkiaRow
-                                Spacing="10"
-                                UseCache="Operations">
+                            <draw:SkiaRow Spacing="10" UseCache="Operations">
 
                                 <draw:SkiaSvg
                                     LockRatio="1"

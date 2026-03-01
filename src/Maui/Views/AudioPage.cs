@@ -65,8 +65,6 @@ public partial class AudioPage : BasePageReloadable, IDisposable
         }
     }
 
-    private long _lastAudioDispatchMs = 0;
-
     private void OnAudioSample(AudioSample sample)
     {
         // Single wall-clock gate
