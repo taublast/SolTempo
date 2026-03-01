@@ -52,6 +52,8 @@ Read the blog article - COMING SOON 👈
 
 * Run on Windows and MacCatalyst compiling from source code
 
+<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/c236479f-80ec-4279-849c-6a8ae3aaaf24" />
+
 ### Development Insights:
 
 * Using `SkiaCamera` audio monitoring and audio transform features
