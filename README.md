@@ -52,7 +52,7 @@ Read the blog article - COMING SOON 👈
 
 * Run on Windows and MacCatalyst compiling from source code
 
-<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/c236479f-80ec-4279-849c-6a8ae3aaaf24" />
+<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
 
 ### Development Insights:
 
