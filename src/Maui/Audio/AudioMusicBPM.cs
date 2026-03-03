@@ -118,7 +118,6 @@ namespace SolTempo.Audio
                     FontSize = 140,
                     //MonoForDigits = "8",
                     CharacterSpacing = 5.0,
-                    IsParentIndependent = true,
                     Margin = new (2,16),
                     MaxLines = 1,
                     LineBreakMode = LineBreakMode.CharacterWrap,
