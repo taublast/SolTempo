@@ -46,7 +46,7 @@ Read the blog article - COMING SOON 👈
 
 ### Install
 
-* AppStore - IN REVIEW
+* [AppStore](https://apps.apple.com/app/soltempo/id6759321593) - install for iPhone and iPad
 
 * Google Play - IN REVIEW
 
