@@ -12,6 +12,16 @@ Real-time note pitch + BPM detection for voice and instruments. Selectable note 
 
 ---
 
+### Install
+
+* [AppStore](https://apps.apple.com/app/soltempo/id6759321593) - install for iPhone and iPad
+
+* [Google Play](https://play.google.com/store/apps/details?id=com.appomobi.soltempo) - install on Android
+
+* Run on Windows and MacCatalyst compiling from source code
+
+---
+
 SolTempo listens to your instrument or voice in real time and shows the musical note (pitch) you’re playing or singing. 
 
 Switch to the secondary module to detect music tempo (BPM) and get an instant read with an appealing visual display.
@@ -43,14 +53,6 @@ Read the blog article - COMING SOON 👈
 ### Latest Changes
 
 * Initial release
-
-### Install
-
-* [AppStore](https://apps.apple.com/app/soltempo/id6759321593) - install for iPhone and iPad
-
-* [Google Play](https://play.google.com/store/apps/details?id=com.appomobi.soltempo) - install on Android
-
-* Run on Windows and MacCatalyst compiling from source code
 
 <img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
 
