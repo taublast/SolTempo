@@ -46,15 +46,15 @@ SolTempo does not collect, store, or share personal data. Audio analysis happens
 
 ---
 
-Please star ⭐ if you like it!
-
 Read the blog article - COMING SOON 👈
+
+<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
+
+Please star ⭐ if you like it!
 
 ### Latest Changes
 
 * Initial release
-
-<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
 
 ### Development Insights:
 
