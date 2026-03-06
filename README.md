@@ -48,7 +48,7 @@ Read the blog article - COMING SOON 👈
 
 * [AppStore](https://apps.apple.com/app/soltempo/id6759321593) - install for iPhone and iPad
 
-* Google Play - IN REVIEW
+* [Google Play](https://play.google.com/store/apps/details?id=com.appomobi.soltempo) - install on Android
 
 * Run on Windows and MacCatalyst compiling from source code
 
