@@ -14,6 +14,11 @@ namespace SolTempo
             Super.SetLocale("en"); //todo add localization support
 
             InitializeComponent();
+
+#if ANDROID
+            Super.SetNavigationBarColor(Colors.Black, Colors.Black, false);    
+#endif
+
         }
 
         protected override Window CreateWindow(IActivationState activationState)

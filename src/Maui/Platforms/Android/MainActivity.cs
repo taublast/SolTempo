@@ -6,7 +6,7 @@ using DrawnUi;
  
 namespace SolTempo
 {
-    [Activity(Theme = "@style/Maui.SplashTheme",
+    [Activity(Theme = "@style/MainTheme",
         MainLauncher = true,
         ScreenOrientation = ScreenOrientation.SensorPortrait,
         ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
