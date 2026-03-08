@@ -10,6 +10,8 @@ Open-source .NET app for iOS, Mac Catalyst, Android and Windows.
 
 Real-time note pitch + BPM detection for voice and instruments. Selectable note notations, streak achievements. Audio gain boost, on-device processing.
 
+[Read the blog article](https://taublast.github.io/posts/SolTempo/) 👈
+
 ---
 
 ### Install
@@ -21,8 +23,6 @@ Real-time note pitch + BPM detection for voice and instruments. Selectable note 
 * Run on Windows and MacCatalyst compiling from source code
 
 ---
-
-https://github.com/user-attachments/assets/8200f927-d4e3-4346-9690-96de1dc945c0
 
 
 SolTempo listens to your instrument or voice in real time and shows the musical note (pitch) you’re playing or singing. 
@@ -40,6 +40,8 @@ Features
 - Tap to reset the current module and start listening from scratch  
 - Audio settings: choose input device (or System Default) and enable Gain (+5) for low signals
 
+<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
+
 Tips
 - Keep your instrument close to the microphone for best accuracy.  
 - For voice pitch detection, avoid background music.
@@ -48,10 +50,6 @@ Privacy
 SolTempo does not collect, store, or share personal data. Audio analysis happens locally on your device and all data stays on it.
 
 ---
-
-Read the blog article - COMING SOON 👈
-
-<img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
 
 Please star ⭐ if you like it!
 
