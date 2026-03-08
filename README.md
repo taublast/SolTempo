@@ -70,7 +70,7 @@ Please star ⭐ if you like it!
 
 * [SkiaSharp](https://github.com/mono/SkiaSharp)
 * [DrawnUi for .NET MAUI](https://github.com/taublast/DrawnUi)
-* [Plugin.Maui.AppRating](https://github.com/taublast/FastPopups)
+* [Plugin.Maui.AppRating](https://github.com/FabriBertani/Plugin.Maui.AppRating)
 
 ### Contributing
 
