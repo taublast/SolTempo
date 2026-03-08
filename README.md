@@ -22,6 +22,9 @@ Real-time note pitch + BPM detection for voice and instruments. Selectable note 
 
 ---
 
+https://github.com/user-attachments/assets/8200f927-d4e3-4346-9690-96de1dc945c0
+
+
 SolTempo listens to your instrument or voice in real time and shows the musical note (pitch) you’re playing or singing. 
 
 Switch to the secondary module to detect music tempo (BPM) and get an instant read with an appealing visual display.
