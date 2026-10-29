@@ -83,6 +83,8 @@ Please star ⭐ if you like it!
 * Built-in shader live editor when running on Windows
 * Confetti and equalizer SkiaSharp drawing helpers
 * App drawn on a single DrawnUI `Canvas`.
+* UI in 8 languages from resx files; switching language rebuilds only the drawn tree inside the same canvas
+* Screen reader support with DrawnUI accessibility: labelled controls, live note and tempo announcements
 
  ### .NET MAUI Libs Stack
 
