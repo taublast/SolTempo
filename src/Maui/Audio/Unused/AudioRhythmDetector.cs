@@ -60,6 +60,8 @@ namespace SolTempo.Audio
 
         private SKPaint _paintTextLarge;
         private SKPaint _paintTextSmall;
+        private SKFont _fontLarge;
+        private SKFont _fontSmall;
         private SKPaint _paintBeatIndicator;
         private SKPaint _paintWaveform;
 
@@ -460,19 +462,18 @@ namespace SolTempo.Audio
             _paintTextLarge ??= new SKPaint
             {
                 Color = SKColors.White,
-                TextSize = 120 * scale,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+                IsAntialias = true
             };
+
+            _fontLarge ??= new SKFont(SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold), 120 * scale);
 
             _paintTextSmall ??= new SKPaint
             {
                 Color = SKColors.LightGray,
-                TextSize = 32 * scale,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center
+                IsAntialias = true
             };
+
+            _fontSmall ??= new SKFont { Size = 32 * scale };
 
             _paintBeatIndicator ??= new SKPaint
             {
@@ -502,17 +503,17 @@ namespace SolTempo.Audio
                 _paintTextLarge.Color = isLive ? SKColors.White : SKColors.Gray;
 
                 string bpmText = $"{_displayBPM:F1}";
-                canvas.DrawText(bpmText, centerX, centerY - 20 * scale, _paintTextLarge);
-                canvas.DrawText("BPM", centerX, centerY + 60 * scale, _paintTextSmall);
+                canvas.DrawText(bpmText, centerX, centerY - 20 * scale, SKTextAlign.Center, _fontLarge, _paintTextLarge);
+                canvas.DrawText("BPM", centerX, centerY + 60 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
 
                 // Debug: show beat count
-                _paintTextSmall.TextSize = 16 * scale;
-                canvas.DrawText($"Beats: {_beatTimestamps.Count}", centerX, centerY + 85 * scale, _paintTextSmall);
-                _paintTextSmall.TextSize = 32 * scale;
+                _fontSmall.Size = 16 * scale;
+                canvas.DrawText($"Beats: {_beatTimestamps.Count}", centerX, centerY + 85 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
+                _fontSmall.Size = 32 * scale;
             }
             else
             {
-                canvas.DrawText("Listening..", centerX, centerY, _paintTextSmall);
+                canvas.DrawText("Listening..", centerX, centerY, SKTextAlign.Center, _fontSmall, _paintTextSmall);
             }
 
             // Draw beat indicator (pulsing circle)
@@ -584,6 +585,8 @@ namespace SolTempo.Audio
         {
             _paintTextLarge?.Dispose();
             _paintTextSmall?.Dispose();
+            _fontLarge?.Dispose();
+            _fontSmall?.Dispose();
             _paintBeatIndicator?.Dispose();
             _paintWaveform?.Dispose();
         }

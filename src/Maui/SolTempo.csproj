@@ -2,16 +2,17 @@
 
   <PropertyGroup>
 
-    <!--<TargetFrameworks>net9.0-android</TargetFrameworks>-->
-    <!--<TargetFrameworks>net9.0-ios</TargetFrameworks>-->
+    <!--<TargetFrameworks>net10.0-android</TargetFrameworks>-->
+    <!--<TargetFrameworks>net10.0-ios</TargetFrameworks>-->
 
-    <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 
     <ApplicationId>com.appomobi.soltempo</ApplicationId>
     <ApplicationIdGuid>3a1b76b0-efc2-4fde-9ac8-074d5c3299b3</ApplicationIdGuid>
     <ApplicationTitle>SolTempo</ApplicationTitle>
     <RootNamespace>SolTempo</RootNamespace>
+    <ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
 
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
@@ -23,7 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseSource)' != 'true'">
-    <PackageReference Include="DrawnUi.Maui.Camera" Version="1.9.3.1" />
+    <PackageReference Include="DrawnUi.Maui.Camera" Version="1.10.8.31" />
   </ItemGroup>
 
 
@@ -72,12 +73,13 @@
     <ProvisioningType>manual</ProvisioningType>
   </PropertyGroup>
 
-  <!-- CHANGE TO SIGN-->
-  <PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+  <!--PUBLISH APPSTORE-->
+  <PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
     <CodesignKey>Apple Distribution: NIKOLAY KOVALSKIY (F5H2D34D9G)</CodesignKey>
   </PropertyGroup>
 
-  <!--<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+  <!--DEBUG-->
+  <!--<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
     <CodesignKey>Apple Development: Created via API (R2DBJ49UL4)</CodesignKey>
     <CodesignProvision></CodesignProvision>
   </PropertyGroup>-->
@@ -128,8 +130,8 @@
     </PackageReference>
 
     <PackageReference Include="Plugin.Maui.AppRating" Version="1.2.3" />
-    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.70" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.80" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.9" />
     <!--<PackageReference Include="DrawnUi.Maui" Version="1.6.2.5" />-->
   </ItemGroup>
 

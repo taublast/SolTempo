@@ -130,6 +130,7 @@ public partial class AudioPage
                         //NOTES
                         new SkiaShape()
                         {
+                            UseCache = SkiaCacheType.None, //glass backdrop inside must copy what is behind on every frame
                             WidthRequest=900,
                             HorizontalOptions = LayoutOptions.Center,
                             Margin = new (16,16,16,0),
@@ -172,6 +173,7 @@ public partial class AudioPage
                         new SkiaShape()
                         {
                             IsVisible=false,
+                            UseCache = SkiaCacheType.None, //glass backdrop inside must copy what is behind on every frame
                             WidthRequest=900,
                             Margin = new (16,16,16,0),
                             HorizontalOptions = LayoutOptions.Center,
@@ -230,6 +232,7 @@ public partial class AudioPage
                         {
 
                             Type = ShapeType.Rectangle,
+                            UseCache = SkiaCacheType.None, //glass backdrop over the moving equalizer must stay live
                             CornerRadius = 32,
                             //BackgroundColor = Color.FromArgb("#DD000000"),
                             HorizontalOptions = LayoutOptions.Center,

@@ -1,4 +1,4 @@
-﻿using AppoMobi.Maui.Gestures;
+﻿using AppoMobi.Gestures;
 using DrawnUi.Camera;
 using SolTempo.UI;
 using System.Diagnostics;
@@ -165,6 +165,8 @@ namespace SolTempo.Audio
             _paintNeedle = null;
             _paintTextSmall?.Dispose();
             _paintTextSmall = null;
+            _fontSmall?.Dispose();
+            _fontSmall = null;
         }
 
 
@@ -253,6 +255,7 @@ namespace SolTempo.Audio
         private SKPaint _paintGauge;
         private SKPaint _paintNeedle;
         private SKPaint _paintTextSmall;
+        private SKFont _fontSmall;
 
         public int Notation { get; set; } = 2;
 
@@ -899,14 +902,13 @@ namespace SolTempo.Audio
                 if (_paintTextSmall == null)
                 {
                     _paintTextSmall = new();
-                    _paintTextSmall.TextAlign = SKTextAlign.Right;
-                    _paintTextSmall.FakeBoldText = true;
+                    _fontSmall = new() { Embolden = true };
                 }
 
-                _paintTextSmall.TextSize = 30 * scale;
+                _fontSmall.Size = 30 * scale;
                 _paintTextSmall.Color = _displayColorSK;
 
-                canvas.DrawText("#", cx - 22 * scale, noteY + 10 * scale, _paintTextSmall);
+                canvas.DrawText("#", cx - 22 * scale, noteY + 10 * scale, SKTextAlign.Right, _fontSmall, _paintTextSmall);
             }
             
         }

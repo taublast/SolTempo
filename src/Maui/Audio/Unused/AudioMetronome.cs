@@ -44,6 +44,8 @@ namespace SolTempo.Audio
 
         private SKPaint _paintTextLarge;
         private SKPaint _paintTextSmall;
+        private SKFont _fontLarge;
+        private SKFont _fontSmall;
         private SKPaint _paintMetronome;
         private SKPaint _paintUserBeat;
         private SKPaint _paintAccuracy;
@@ -279,19 +281,18 @@ namespace SolTempo.Audio
             _paintTextLarge ??= new SKPaint
             {
                 Color = SKColors.White,
-                TextSize = 80 * scale,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold)
+                IsAntialias = true
             };
+
+            _fontLarge ??= new SKFont(SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold), 80 * scale);
 
             _paintTextSmall ??= new SKPaint
             {
                 Color = SKColors.LightGray,
-                TextSize = 28 * scale,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center
+                IsAntialias = true
             };
+
+            _fontSmall ??= new SKFont { Size = 28 * scale };
 
             _paintMetronome ??= new SKPaint
             {
@@ -330,7 +331,7 @@ namespace SolTempo.Audio
             canvas.DrawRect(viewport, new SKPaint { Color = new SKColor(20, 20, 30) });
 
             // Draw BPM
-            canvas.DrawText($"{_targetBPM:F0} BPM", centerX, viewport.Top + 50 * scale, _paintTextSmall);
+            canvas.DrawText($"{_targetBPM:F0} BPM", centerX, viewport.Top + 50 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
 
             // Draw metronome click indicator (cyan circle)
             if (_metronomeFlash > 0.1f)
@@ -349,10 +350,10 @@ namespace SolTempo.Audio
             }
 
             // Draw labels
-            _paintTextSmall.TextSize = 20 * scale;
-            canvas.DrawText("Metronome", centerX - 80 * scale, centerY + 40 * scale, _paintTextSmall);
-            canvas.DrawText("Your Beat", centerX + 80 * scale, centerY + 40 * scale, _paintTextSmall);
-            _paintTextSmall.TextSize = 28 * scale;
+            _fontSmall.Size = 20 * scale;
+            canvas.DrawText("Metronome", centerX - 80 * scale, centerY + 40 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
+            canvas.DrawText("Your Beat", centerX + 80 * scale, centerY + 40 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
+            _fontSmall.Size = 28 * scale;
 
             // Draw timing error
             if (_timingErrors.Count > 0)
@@ -361,15 +362,15 @@ namespace SolTempo.Audio
                 SKColor errorColor = Math.Abs(_displayTimingError) < 50 ? SKColors.LimeGreen : 
                                      Math.Abs(_displayTimingError) < 100 ? SKColors.Yellow : SKColors.Red;
                 _paintTextLarge.Color = errorColor;
-                canvas.DrawText(errorText, centerX, centerY + 100 * scale, _paintTextLarge);
+                canvas.DrawText(errorText, centerX, centerY + 100 * scale, SKTextAlign.Center, _fontLarge, _paintTextLarge);
                 
                 _paintTextSmall.Color = SKColors.LightGray;
-                canvas.DrawText(_displayTimingError < 0 ? "Early" : "Late", centerX, centerY + 135 * scale, _paintTextSmall);
+                canvas.DrawText(_displayTimingError < 0 ? "Early" : "Late", centerX, centerY + 135 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
             }
 
             // Draw accuracy meter
             float accuracy = _displayAccuracy;
-            canvas.DrawText($"Accuracy: {accuracy:F0}%", centerX, centerY + 180 * scale, _paintTextSmall);
+            canvas.DrawText($"Accuracy: {accuracy:F0}%", centerX, centerY + 180 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
 
             // Draw accuracy bar
             float barWidth = 200 * scale;
@@ -388,8 +389,8 @@ namespace SolTempo.Audio
 
             // Draw controls hint
             _paintTextSmall.Color = SKColors.Gray;
-            _paintTextSmall.TextSize = 16 * scale;
-            canvas.DrawText("Tap in time with the metronome", centerX, viewport.Bottom - 20 * scale, _paintTextSmall);
+            _fontSmall.Size = 16 * scale;
+            canvas.DrawText("Tap in time with the metronome", centerX, viewport.Bottom - 20 * scale, SKTextAlign.Center, _fontSmall, _paintTextSmall);
             return false;
         }
 
@@ -402,6 +403,8 @@ namespace SolTempo.Audio
         {
             _paintTextLarge?.Dispose();
             _paintTextSmall?.Dispose();
+            _fontLarge?.Dispose();
+            _fontSmall?.Dispose();
             _paintMetronome?.Dispose();
             _paintUserBeat?.Dispose();
             _paintAccuracy?.Dispose();

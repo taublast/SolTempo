@@ -106,8 +106,7 @@ namespace SolTempo.Audio
                 _paintText = new SKPaint
                 {
                     Color = SKColors.Yellow,
-                    IsAntialias = true,
-                    TextAlign = SKTextAlign.Center
+                    IsAntialias = true
                 };
             }
 

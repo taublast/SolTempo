@@ -16,6 +16,8 @@ namespace SolTempo
         {
             base.OnCreate(savedInstanceState);
 
+            // white status bar icons over the app's black status bar area (edge-to-edge, Android 15+)
+            Super.SetWhiteTextStatusBar();
         }
 
         public override bool DispatchKeyEvent(KeyEvent e)

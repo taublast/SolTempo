@@ -1,9 +1,11 @@
 # Privacy Policy
 
-By using this application (“App”), you consent to Nikolay Kovalskiy aka AppoMobi collecting, storing, using, updating, transferring (including to foreign parties), 
-and otherwise processing your personal data - including full name, phone number, email address, and date of birth - solely to provide and operate the App and its services. 
-This consent is valid indefinitely. <br/>
-We will delete your personal data upon your written request sent to  [dev@appomobi.com](mailto:dev@appomobi.com).  
-For any questions, contact us at [dev@appomobi.com](mailto:dev@appomobi.com).  
-Last updated: 03 March 2026
+SolTempo does not collect, store or share any personal data.
 
+The app uses the microphone only to detect musical notes and tempo in real time. Sound is analyzed on your device as it plays: it is never recorded, saved or sent anywhere.
+
+The app has no accounts, no ads and no analytics. Your settings (note names, sound source, gain) are stored only on your device.
+
+For any questions, contact us at [dev@appomobi.com](mailto:dev@appomobi.com).
+
+Last updated: 29 October 2026

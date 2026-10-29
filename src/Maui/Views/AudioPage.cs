@@ -253,6 +253,26 @@ public partial class AudioPage : BasePageReloadable, IDisposable
 #endif
     }
 
+    /// <summary>
+    /// Hardware/system Back closes an open popup first, then falls back to the default behavior.
+    /// </summary>
+    protected override bool OnBackButtonPressed()
+    {
+        if (_settingsPopup?.IsVisible == true)
+        {
+            _settingsPopup.Close();
+            return true;
+        }
+
+        if (_helpPopup?.IsVisible == true)
+        {
+            _helpPopup.Close();
+            return true;
+        }
+
+        return base.OnBackButtonPressed();
+    }
+
     private void TappedHelp()
     {
         //Demo();

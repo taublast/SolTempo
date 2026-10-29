@@ -55,6 +55,14 @@ Please star ⭐ if you like it!
 
 ### Latest Changes
 
+**1.1**
+
+* Ready for Android 16
+* Back button closes an open panel first
+* Glass panels show the live equalizer behind them
+
+**1.0**
+
 * Initial release
 
 ### Development Insights:
@@ -62,7 +70,7 @@ Please star ⭐ if you like it!
 * Using `SkiaCamera` audio monitoring and audio transform features
 * Applying backdrop liquid glass-like SKSL shader in real-time
 * Using shaders for animating appear/exit of popups
-* Uisng animated shader for achievement effect
+* Using animated shader for achievement effect
 * Built-in shader live editor when running on Windows
 * Confetti and equalizer SkiaSharp drawing helpers
 * App drawn on a single DrawnUI `Canvas`.
