@@ -231,5 +231,329 @@ namespace SolTempo.Resources.Strings {
                 return ResourceManager.GetString("Yes", resourceCulture);
             }
         }
+    
+        /// <summary>
+        ///   Looks up a localized string similar to Pitch Settings.
+        /// </summary>
+        public static string PitchSettings {
+            get {
+                return ResourceManager.GetString("PitchSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notation.
+        /// </summary>
+        public static string Notation {
+            get {
+                return ResourceManager.GetString("Notation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sharp Notes.
+        /// </summary>
+        public static string SharpNotes {
+            get {
+                return ResourceManager.GetString("SharpNotes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Audio Settings.
+        /// </summary>
+        public static string AudioSettings {
+            get {
+                return ResourceManager.GetString("AudioSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Source.
+        /// </summary>
+        public static string Source {
+            get {
+                return ResourceManager.GetString("Source", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use Gain.
+        /// </summary>
+        public static string UseGain {
+            get {
+                return ResourceManager.GetString("UseGain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Various.
+        /// </summary>
+        public static string Various {
+            get {
+                return ResourceManager.GetString("Various", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Share App.
+        /// </summary>
+        public static string ShareApp {
+            get {
+                return ResourceManager.GetString("ShareApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Privacy.
+        /// </summary>
+        public static string Privacy {
+            get {
+                return ResourceManager.GetString("Privacy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Language.
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Letters.
+        /// </summary>
+        public static string NotationLetters {
+            get {
+                return ResourceManager.GetString("NotationLetters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to European.
+        /// </summary>
+        public static string NotationEuropean {
+            get {
+                return ResourceManager.GetString("NotationEuropean", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to American.
+        /// </summary>
+        public static string NotationAmerican {
+            get {
+                return ResourceManager.GetString("NotationAmerican", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cyrillic.
+        /// </summary>
+        public static string NotationCyrillic {
+            get {
+                return ResourceManager.GetString("NotationCyrillic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Numbers.
+        /// </summary>
+        public static string NotationNumbers {
+            get {
+                return ResourceManager.GetString("NotationNumbers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default.
+        /// </summary>
+        public static string SourceDefault {
+            get {
+                return ResourceManager.GetString("SourceDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to System Default.
+        /// </summary>
+        public static string SystemDefault {
+            get {
+                return ResourceManager.GetString("SystemDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Select Notation.
+        /// </summary>
+        public static string SelectNotation {
+            get {
+                return ResourceManager.GetString("SelectNotation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Select Audio Source.
+        /// </summary>
+        public static string SelectAudioSource {
+            get {
+                return ResourceManager.GetString("SelectAudioSource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Select Language.
+        /// </summary>
+        public static string SelectLanguage {
+            get {
+                return ResourceManager.GetString("SelectLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No Input Devices.
+        /// </summary>
+        public static string NoInputDevices {
+            get {
+                return ResourceManager.GetString("NoInputDevices", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No audio input devices found..
+        /// </summary>
+        public static string NoInputDevicesFound {
+            get {
+                return ResourceManager.GetString("NoInputDevicesFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error.
+        /// </summary>
+        public static string Error {
+            get {
+                return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error getting audio devices: {0}.
+        /// </summary>
+        public static string ErrorAudioDevices {
+            get {
+                return ResourceManager.GetString("ErrorAudioDevices", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hardware Error.
+        /// </summary>
+        public static string HardwareError {
+            get {
+                return ResourceManager.GetString("HardwareError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Privacy Policy.
+        /// </summary>
+        public static string PrivacyPolicy {
+            get {
+                return ResourceManager.GetString("PrivacyPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device..
+        /// </summary>
+        public static string PrivacyText {
+            get {
+                return ResourceManager.GetString("PrivacyText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Help.
+        /// </summary>
+        public static string Help {
+            get {
+                return ResourceManager.GetString("Help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tap to reset BPM metering.
+        /// </summary>
+        public static string TapToResetBpm {
+            get {
+                return ResourceManager.GetString("TapToResetBpm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Listening...
+        /// </summary>
+        public static string Listening {
+            get {
+                return ResourceManager.GetString("Listening", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Thinking...
+        /// </summary>
+        public static string Thinking {
+            get {
+                return ResourceManager.GetString("Thinking", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Confidence: {0}%.
+        /// </summary>
+        public static string Confidence {
+            get {
+                return ResourceManager.GetString("Confidence", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} cents.
+        /// </summary>
+        public static string Cents {
+            get {
+                return ResourceManager.GetString("Cents", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Switch to tempo (BPM).
+        /// </summary>
+        public static string A11yToBpm {
+            get {
+                return ResourceManager.GetString("A11yToBpm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Switch to notes.
+        /// </summary>
+        public static string A11yToNotes {
+            get {
+                return ResourceManager.GetString("A11yToNotes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to sharp.
+        /// </summary>
+        public static string A11ySharp {
+            get {
+                return ResourceManager.GetString("A11ySharp", resourceCulture);
+            }
+        }
     }
 }

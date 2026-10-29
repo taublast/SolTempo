@@ -9,6 +9,7 @@ namespace SolTempo
         public static string Icons = "FontIcons";
         public static string Emogi = "FontEmoji";
         public static string Default = "FontText";
+        public static string DefaultLatin = "FontTextLatin";
         public static string Bold = "FontTextBold";
         public static string Title = "FontTextTitle";
 
@@ -36,6 +37,7 @@ namespace SolTempo
                     fonts.AddFont("NotoColorEmoji-Regular.ttf", AppFonts.Emogi);
 
                     fonts.AddFont("Neucha-Regular.ttf", AppFonts.Default);
+                    fonts.AddFont("ShantellSans-Regular.ttf", AppFonts.DefaultLatin); //FontText for sr, it, pt: Neucha lacks their letters
                     fonts.AddFont("ShantellSans-Bold.ttf", AppFonts.Bold);
                     fonts.AddFont("NotoSansDisplay-Regular.ttf", AppFonts.Title);
                 });

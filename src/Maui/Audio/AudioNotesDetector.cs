@@ -1,4 +1,5 @@
-﻿using AppoMobi.Gestures;
+﻿using SolTempo.Resources.Strings;
+using AppoMobi.Gestures;
 using DrawnUi.Camera;
 using SolTempo.UI;
 using System.Diagnostics;
@@ -59,7 +60,7 @@ namespace SolTempo.Audio
                     TextColor = Colors.Gray,
                 }.Assign(out _labelFrequency),
 
-                new SkiaLabel("0 cents")
+                new SkiaLabel(string.Format(ResStrings.Cents, "+0"))
                 {
                     Margin = 24,
                     UseCache = SkiaCacheType.Operations,
@@ -193,6 +194,12 @@ namespace SolTempo.Audio
         private int _currentMidiNote = 0;
         private float _currentFrequency = 0;
         private float _currentCents = 0;
+
+        /// <summary>Note name shown on the card, in the current notation (for the spoken label).</summary>
+        public string DetectedNoteName => _detectedNoteSolfegeName;
+
+        /// <summary>Cents off the nearest semitone for the detected note.</summary>
+        public float DetectedCents => _currentCents;
 
         bool _hasSignal;
         public bool HasSignal
@@ -478,7 +485,7 @@ namespace SolTempo.Audio
                 _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
 
                 // Cents Text
-                _labelCents.Text = $"{_displayCents:+0;-0} cents";
+                _labelCents.Text = string.Format(ResStrings.Cents, $"{_displayCents:+0;-0}");
             }
 
         }
@@ -711,22 +718,28 @@ namespace SolTempo.Audio
 
                     // Lock in Hz and cents only when vote is confident — keeps them
                     // in sync with the confirmed note, not jumping during transitions.
-                    _currentFrequency = rawFrequency;
-
-                    float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
-                    if (targetFreq > 0)
+                    // Only from frames whose own pitch IS the confirmed note: while the vote still holds a
+                    // note, a single frame read as another note (a subharmonic, a neighbour) would give
+                    // that note's Hz and hundreds of cents against the confirmed one.
+                    if (detectedMidiNote == _currentMidiNote)
                     {
-                        float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
+                        _currentFrequency = rawFrequency;
 
-                        _centsBuf[_centsHead] = rawCents;
-                        _centsHead = (_centsHead + 1) % CentsMaxHistory;
-                        if (_centsCount < CentsMaxHistory) _centsCount++;
+                        float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
+                        if (targetFreq > 0)
+                        {
+                            float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
 
-                        float sum = 0;
-                        int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
-                        for (int ci = 0; ci < _centsCount; ci++)
-                            sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
-                        _currentCents = sum / _centsCount;
+                            _centsBuf[_centsHead] = rawCents;
+                            _centsHead = (_centsHead + 1) % CentsMaxHistory;
+                            if (_centsCount < CentsMaxHistory) _centsCount++;
+
+                            float sum = 0;
+                            int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
+                            for (int ci = 0; ci < _centsCount; ci++)
+                                sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
+                            _currentCents = sum / _centsCount;
+                        }
                     }
 
                     if (noteChanged)
@@ -804,7 +817,7 @@ namespace SolTempo.Audio
             _labelFrequency.TextColor = _colorFreqOnGray;
             _labelFrequency.Text = $"{_displayFrequency:F1} Hz";
 
-            _labelCents.Text = $"{_displayCents:+0;-0} cents";
+            _labelCents.Text = string.Format(ResStrings.Cents, $"{_displayCents:+0;-0}");
 
             // Optional: force redraw / layout pass if needed in your control
             Update();           // most Skia controls react to this

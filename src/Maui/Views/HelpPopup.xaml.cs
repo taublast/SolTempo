@@ -1,3 +1,6 @@
+using DrawnUi.Models;
+using SolTempo.Helpers;
+using SolTempo.Resources.Strings;
 using System.Globalization;
 
 namespace SolTempo.UI;
@@ -12,6 +15,11 @@ public partial class HelpPopup : AnimatedPopup
         
         SetAnimatable(Animated);
 
+        // screen readers: a heading, the help text as one text block, the two credit links, the close button
+        LinkMaui.WithAccessibility(Aria.RoleLink, ".NET MAUI", hint: null);
+        LinkDrawnUi.WithAccessibility(Aria.RoleLink, "DrawnUI", hint: null);
+        BtnClose.WithAccessibilityButton(ResStrings.BtnClose);
+
         _ = LoadHelpContent();
     }
 
@@ -21,23 +29,36 @@ public partial class HelpPopup : AnimatedPopup
     {
         try
         {
-            var lang = "en"; // todo will localize
+            var lang = AppLanguage.Current;
             var content = await TryLoadFile($"Markdown/help.{lang}.md");
 
             if (content == null && lang != "en")
             {
-                content = await TryLoadFile("help.en.md");
+                content = await TryLoadFile("Markdown/help.en.md");
             }
 
             if (content != null)
             {
                 HelpContent.Text = content;
+                HelpContent.WithAccessibilityText(ToSpokenText(content));
+                HelpContent.NotifyAccessibility();
             }
         }
         catch (Exception ex)
         {
             Super.Log(ex);
         }
+    }
+
+    /// <summary>
+    /// The help is markdown; a screen reader must not read its marks aloud: headings and list marks,
+    /// bold/italic stars, rules, and links keep only their text.
+    /// </summary>
+    private static string ToSpokenText(string markdown)
+    {
+        var text = System.Text.RegularExpressions.Regex.Replace(markdown, @"\[([^\]]+)\]\([^\)]*\)", "$1");
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"(?m)^\s*(#+|-{3,}|[-*])\s?", "");
+        return text.Replace("**", "").Replace("__", "");
     }
 
     private static async Task<string> TryLoadFile(string filename)

@@ -73,6 +73,19 @@ public partial class AudioPage
     /// </summary>
     public override void Build()
     {
+        ReleaseTreeState();
+
+        Canvas?.Dispose();
+
+        CreateContent();
+    }
+
+    /// <summary>
+    /// What belongs to the current drawn tree and must not outlive it: the audio hardware,
+    /// the confetti timer and the banner fade.
+    /// </summary>
+    private void ReleaseTreeState()
+    {
         if (Recorder != null)
         {
             Recorder?.Stop();
@@ -80,9 +93,34 @@ public partial class AudioPage
             Recorder = null;
         }
 
-        Canvas?.Dispose();
+        TimerUpdateLocked?.Dispose();
+        TimerUpdateLocked = null;
+        _bannerCts?.Cancel();
+        _bannerCts = null;
+    }
 
-        CreateContent();
+    /// <summary>
+    /// The language changed in Settings: keep what the user set, build the page again with the new words
+    /// and fonts, and land back in Settings.
+    /// </summary>
+    public void RebuildForLanguage()
+    {
+        if (Recorder != null)
+            UserSettings.FillFromHardware(Recorder);
+        if (NotesModule != null)
+            UserSettings.FillFromNotes(NotesModule);
+        UserSettings.Save();
+
+        ReleaseTreeState();
+        CreateContent(); // keeps the canvas, replaces its drawn tree
+
+        // Settings reopens once the new tree has been laid out and drawn
+        void ShowSettings(object sender, SkiaDrawingContext? context)
+        {
+            Canvas.WasDrawn -= ShowSettings;
+            MainThread.BeginInvokeOnMainThread(() => _settingsPopup?.Show());
+        }
+        Canvas.WasDrawn += ShowSettings;
     }
 
     public AudioPage()
@@ -164,7 +202,11 @@ public partial class AudioPage
                                     Margin = new (16,16,16,0),
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
-                                }.Assign(out NotesModule),
+                                }
+                                .Assign(out NotesModule)
+                                // one spoken node for the card, updated only for a steady note (AnnounceNote)
+                                .WithAccessibility(Aria.RoleStatus, ResStrings.Listening, hint: null)
+                                .WithAccessibilityLive(),
 
                             }
                         }.Assign(out _musicNotesWrapper),
@@ -206,7 +248,11 @@ public partial class AudioPage
                                     Margin = new (6,16,6,6),
                                     HorizontalOptions = LayoutOptions.Fill,
                                     VerticalOptions = LayoutOptions.Fill,
-                                }.Assign(out _musicBPMDetector),
+                                }
+                                .Assign(out _musicBPMDetector)
+                                // one spoken node for the card, updated only for a settled tempo (AudioMusicBPM)
+                                .WithAccessibility(Aria.RoleStatus, ResStrings.Listening, hint: null)
+                                .WithAccessibilityLive(),
 
                                 //new AudioVisualizer(new AudioMusicBPMDetectorLegacy())
                                 //{
@@ -294,6 +340,7 @@ public partial class AudioPage
                                             },
                                         }
                                         .Assign(out _modeButton)
+                                        .WithAccessibilityButton(ResStrings.A11yToBpm) // label follows the module, see ToggleVisualizerMode
                                         .OnTapped(me =>
                                         {
                                             TappedSwitchModules();
@@ -321,6 +368,7 @@ public partial class AudioPage
                                                 },
                                             },
                                         }
+                                        .WithAccessibilityButton(ResStrings.Settings)
                                         .OnTapped(me =>
                                         {
                                             TappedSettings();
@@ -349,6 +397,7 @@ public partial class AudioPage
                                                 },
                                             },
                                         }
+                                        .WithAccessibilityButton(ResStrings.Help)
                                         .OnTapped(me =>
                                         {
                                             TappedHelp();
@@ -420,6 +469,20 @@ public partial class AudioPage
             }
         };
 
+        if (Canvas != null && !Canvas.IsDisposed)
+        {
+            // language switch: the canvas and its GPU surface stay, only the drawn tree is replaced.
+            // The old tree is released by the canvas at the end of a frame, while its GPU context is alive.
+            var oldTree = Canvas.Content;
+            Canvas.Content = rootLayer;
+            if (oldTree != null)
+                Canvas.DisposeObject(oldTree);
+
+            AfterTreeCreated();
+            StartHardware();
+            return;
+        }
+
         Canvas = new Canvas
         {
             RenderingMode = RenderingModeType.Accelerated,
@@ -429,36 +492,7 @@ public partial class AudioPage
 
         Canvas.WillFirstTimeDraw += (sender, context) =>
         {
-            if (Recorder != null)
-            {
-                Tasks.StartDelayed(TimeSpan.FromMilliseconds(500), () =>
-                {
-                    Recorder.IsOn = true;
-
-                    //for fast use in transitions
-                    SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl");
-
-#if ANDROID || IOS
-                    if (UserSettings.Current.TotalUsageSeconds >= 3600 && !UserSettings.Current.RatingRequested)
-                    {
-                        UserSettings.Current.RatingRequested = true;
-                        UserSettings.Save();
-                        MainThread.BeginInvokeOnMainThread(async () =>
-                        {
-                            try
-                            {
-                                await AppRating.Default.PerformInAppRateAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                Super.Log(ex);
-                            }
-                        });
-                    }
-#endif
-
-                });
-            }
+            StartHardware();
         };
 
         Content = new Grid() //due to maui layout specifics we are forced to use a Grid as root wrapper
@@ -468,6 +502,11 @@ public partial class AudioPage
             Children = { Canvas }
         };
 
+        AfterTreeCreated();
+    }
+
+    private void AfterTreeCreated()
+    {
         if (Recorder != null)
         {
             // Setup SkiaCamera event handlers and apply user settings to it
@@ -478,6 +517,40 @@ public partial class AudioPage
         InitAchievements();
 
         ToggleVisualizerMode(UserSettings.Current.Module);
+    }
+
+    private void StartHardware()
+    {
+        if (Recorder != null)
+        {
+            Tasks.StartDelayed(TimeSpan.FromMilliseconds(500), () =>
+            {
+                Recorder.IsOn = true;
+
+                //for fast use in transitions
+                SkSl.Precompile(@"Shaders\transition_ripple.sksl", @"Shaders\appear_orb.sksl", @"Shaders\exit_orb.sksl");
+
+#if ANDROID || IOS
+                if (UserSettings.Current.TotalUsageSeconds >= 3600 && !UserSettings.Current.RatingRequested)
+                {
+                    UserSettings.Current.RatingRequested = true;
+                    UserSettings.Save();
+                    MainThread.BeginInvokeOnMainThread(async () =>
+                    {
+                        try
+                        {
+                            await AppRating.Default.PerformInAppRateAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            Super.Log(ex);
+                        }
+                    });
+                }
+#endif
+
+            });
+        }
     }
 
     private void AttachNotesEvents()
@@ -507,6 +580,47 @@ public partial class AudioPage
     private void NotesModuleOnNoteChanged(int midiNote, char naturalLetter, float frequencyHz)
     {
         Debug.WriteLine($"[Notes] midi={midiNote} ({naturalLetter} = {ToNote(naturalLetter)}) {frequencyHz:F1}Hz");
+
+        AnnounceNote();
+    }
+
+    private bool _noteAnnouncePending;
+    private string _noteAnnounced;
+
+    /// <summary>
+    /// Screen readers hear the note only once it is held: the card's spoken label is set 600 ms after a
+    /// note change, from the note shown then, and only when it differs from the last one spoken.
+    /// Notes changing faster than that are never spoken, so the reader is not flooded.
+    /// </summary>
+    private void AnnounceNote()
+    {
+        if (_noteAnnouncePending)
+            return;
+
+        _noteAnnouncePending = true;
+        Tasks.StartDelayed(TimeSpan.FromMilliseconds(600), () =>
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                _noteAnnouncePending = false;
+
+                var notes = NotesModule;
+                var name = notes?.DetectedNoteName;
+                if (string.IsNullOrEmpty(name) || !notes.HasSignal)
+                    return;
+
+                var spoken = name.Replace("#", " " + ResStrings.A11ySharp);
+                var cents = notes.DetectedCents;
+                if (MathF.Abs(cents) <= 50) // tuning is only meaningful within half a semitone of the note
+                    spoken += ", " + string.Format(ResStrings.Cents, $"{cents:+0;-0}");
+                if (spoken == _noteAnnounced)
+                    return;
+
+                _noteAnnounced = spoken;
+                notes.AccessibilityLabel = spoken;
+                notes.NotifyAccessibility();
+            });
+        });
     }
 
     private void NotesModuleOnSequenceDetected(NoteSequenceEventKind kind, int consecutiveNotes, ReadOnlySpan<char> lastLetters, ReadOnlySpan<int> lastMidiNotes)
@@ -678,6 +792,10 @@ public partial class AudioPage
         _background.ToggleImage(1);
         break;
         }
+
+        // the mode button says where it takes you
+        _modeButton.AccessibilityLabel = _currentMode == 0 ? ResStrings.A11yToBpm : ResStrings.A11yToNotes;
+        _modeButton.NotifyAccessibility();
 
         if (oldMode != _currentMode)
         {

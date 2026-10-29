@@ -1,3 +1,4 @@
+using SolTempo.Resources.Strings;
 using AppoMobi.Gestures;
 using DrawnUi.Camera;
 using SolTempo.UI;
@@ -55,6 +56,28 @@ namespace SolTempo.Audio
         private float _noiseFloor = 0.005f;
 
         private float _displayBPM = 0;
+
+        private int _spokenBpm;
+        private long _spokenBpmAtMs;
+
+        /// <summary>
+        /// Screen readers hear the tempo only once it settles: at most every 3 seconds, and only when it moved
+        /// by 2 BPM or more since the last one spoken. Runs from the draw path, so the label is set on the main thread.
+        /// </summary>
+        private void AnnounceTempo(int bpm)
+        {
+            var now = Environment.TickCount64;
+            if (Math.Abs(bpm - _spokenBpm) < 2 || now - _spokenBpmAtMs < 3000)
+                return;
+
+            _spokenBpm = bpm;
+            _spokenBpmAtMs = now;
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                AccessibilityLabel = $"{bpm} BPM";
+                NotifyAccessibility();
+            });
+        }
         private float _displayConfidence = 0;
         private int _swapRequested = 0;
 
@@ -152,7 +175,7 @@ namespace SolTempo.Audio
                 new SkiaLabel
                 {
                     Margin = new Thickness(16,40),
-                    Text = "Tap to reset BPM metering",
+                    Text = ResStrings.TapToResetBpm,
                     FontSize = 22,
                     FontFamily = AppFonts.Default,
                     TextColor = Colors.LightGray,
@@ -399,6 +422,7 @@ namespace SolTempo.Audio
                 if (_displayConfidence > 80)
                 {
                     _labelBpm.Text = $"{_displayBPM:F0}";
+                    AnnounceTempo((int)MathF.Round(_displayBPM));
                 }
 
                 _labelBpm.TextColor = _displayConfidence > 99 && _hasSignal ? Colors.White : Colors.Gray;
@@ -408,12 +432,12 @@ namespace SolTempo.Audio
                     Color confidenceColor = _displayConfidence > 70 ? Colors.LimeGreen :
                                            _displayConfidence > 40 ? Colors.Yellow : Colors.Orange;
                     _labelConfidence.TextColor = confidenceColor;
-                    _labelConfidence.Text = $"Confidence: {_displayConfidence:F0}%";
+                    _labelConfidence.Text = string.Format(ResStrings.Confidence, $"{_displayConfidence:F0}");
                 }
                 else
                 {
                     _labelConfidence.TextColor = Colors.Orange;
-                    _labelConfidence.Text = "Thinking..";
+                    _labelConfidence.Text = ResStrings.Thinking;
                 }
             }
             else
@@ -423,7 +447,7 @@ namespace SolTempo.Audio
                 _labelBpmUnit.IsVisible = false;
 
                 _labelConfidence.TextColor = Colors.Orange;
-                _labelConfidence.Text = "Listening..";
+                _labelConfidence.Text = ResStrings.Listening;
             }
         }
 

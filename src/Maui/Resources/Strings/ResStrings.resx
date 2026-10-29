@@ -175,4 +175,112 @@
     <value>Check out SolTempo - Notes &amp; BPM detector mobile app!
 https://github.com/taublast/SolTempo</value>
   </data>
+  <data name="PitchSettings" xml:space="preserve">
+    <value>Pitch Settings</value>
+  </data>
+  <data name="Notation" xml:space="preserve">
+    <value>Notation</value>
+  </data>
+  <data name="SharpNotes" xml:space="preserve">
+    <value>Sharp Notes</value>
+  </data>
+  <data name="AudioSettings" xml:space="preserve">
+    <value>Audio Settings</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="UseGain" xml:space="preserve">
+    <value>Use Gain</value>
+  </data>
+  <data name="Various" xml:space="preserve">
+    <value>Various</value>
+  </data>
+  <data name="ShareApp" xml:space="preserve">
+    <value>Share App</value>
+  </data>
+  <data name="Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="NotationLetters" xml:space="preserve">
+    <value>Letters</value>
+  </data>
+  <data name="NotationEuropean" xml:space="preserve">
+    <value>European</value>
+  </data>
+  <data name="NotationAmerican" xml:space="preserve">
+    <value>American</value>
+  </data>
+  <data name="NotationCyrillic" xml:space="preserve">
+    <value>Cyrillic</value>
+  </data>
+  <data name="NotationNumbers" xml:space="preserve">
+    <value>Numbers</value>
+  </data>
+  <data name="SourceDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="SystemDefault" xml:space="preserve">
+    <value>System Default</value>
+  </data>
+  <data name="SelectNotation" xml:space="preserve">
+    <value>Select Notation</value>
+  </data>
+  <data name="SelectAudioSource" xml:space="preserve">
+    <value>Select Audio Source</value>
+  </data>
+  <data name="SelectLanguage" xml:space="preserve">
+    <value>Select Language</value>
+  </data>
+  <data name="NoInputDevices" xml:space="preserve">
+    <value>No Input Devices</value>
+  </data>
+  <data name="NoInputDevicesFound" xml:space="preserve">
+    <value>No audio input devices found.</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="ErrorAudioDevices" xml:space="preserve">
+    <value>Error getting audio devices: {0}</value>
+  </data>
+  <data name="HardwareError" xml:space="preserve">
+    <value>Hardware Error</value>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Privacy Policy</value>
+  </data>
+  <data name="PrivacyText" xml:space="preserve">
+    <value>SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device.</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="TapToResetBpm" xml:space="preserve">
+    <value>Tap to reset BPM metering</value>
+  </data>
+  <data name="Listening" xml:space="preserve">
+    <value>Listening..</value>
+  </data>
+  <data name="Thinking" xml:space="preserve">
+    <value>Thinking..</value>
+  </data>
+  <data name="Confidence" xml:space="preserve">
+    <value>Confidence: {0}%</value>
+  </data>
+  <data name="Cents" xml:space="preserve">
+    <value>{0} cents</value>
+  </data>
+  <data name="A11yToBpm" xml:space="preserve">
+    <value>Switch to tempo (BPM)</value>
+  </data>
+  <data name="A11yToNotes" xml:space="preserve">
+    <value>Switch to notes</value>
+  </data>
+  <data name="A11ySharp" xml:space="preserve">
+    <value>sharp</value>
+  </data>
 </root>

@@ -4,6 +4,7 @@
     x:Class="SolTempo.UI.HelpPopup"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:strings="clr-namespace:SolTempo.Resources.Strings"
     xmlns:draw="http://schemas.appomobi.com/drawnUi/2023/draw"
     xmlns:solTempo="clr-namespace:SolTempo"
     xmlns:ui="clr-namespace:SolTempo.UI"
@@ -49,7 +50,7 @@
                             FontFamily="FontTextTitle"
                             FontSize="18"
                             HorizontalOptions="Center"
-                            Text="Help"
+                            Text="{x:Static strings:ResStrings.Help}"
                             TextColor="DarkGray"
                             UseCache="Operations" />-->
 
@@ -70,14 +71,14 @@
                                 <draw:SkiaSvg
                                     LockRatio="1"
                                     SvgString="{x:StaticResource SvgLogoMaui}"
-                                    Tapped="TappedMaui"
+                                    x:Name="LinkMaui" Tapped="TappedMaui"
                                     WidthRequest="44" />
 
                                 <draw:SkiaSvg
                                     Margin="0,-2,0,0"
                                     LockRatio="1"
                                     SvgString="{x:StaticResource SvgLogoDrawnUi}"
-                                    Tapped="TappedDrawnUi"
+                                    x:Name="LinkDrawnUi" Tapped="TappedDrawnUi"
                                     WidthRequest="52" />
 
                             </draw:SkiaRow>
@@ -105,7 +106,7 @@
                 LockRatio="1"
                 StrokeColor="Goldenrod"
                 StrokeWidth="1"
-                Tapped="TappedClose"
+                x:Name="BtnClose" Tapped="TappedClose"
                 TranslationX="10"
                 TranslationY="-10"
                 Type="Circle"

@@ -12,10 +12,15 @@ namespace SolTempo.Helpers
             Device = 0;
             Gain = false;
             NotesUseSemiNotes = true;
-            NotesNotation = 1; //eu
+            NotesNotation = AppLanguage.DeviceLanguage() == "ru" ? 3 : 1; //first run: Cyrillic for Russian phones, else European
         }
 
         public string Lang { get; set; }
+
+        /// <summary>
+        /// True once the user picked a language in Settings, else the app follows the device language.
+        /// </summary>
+        public bool LangChosen { get; set; }
         public int Module { get; set; }
         public int Device { get; set; }
         public bool Gain { get; set; } 

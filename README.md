@@ -38,7 +38,9 @@ Features
 - Sharp/flat semitones option (C#, Eb, etc.)  
 - BPM / tempo detection (approx. 40–260 BPM) for music or metronome  
 - Tap to reset the current module and start listening from scratch  
-- Audio settings: choose input device (or System Default) and enable Gain (+5) for low signals
+- Audio settings: choose input device (or System Default) and enable Gain (+5) for low signals  
+- App in 8 languages: English, Русский, Français, Deutsch, Español, Italiano, Português, Srpski. Follows the phone language, change it in Settings  
+- Works with screen readers: buttons and settings are labelled, the held note and the settled tempo are spoken
 
 <img width="707px" height="auto" alt="banner" src="https://github.com/user-attachments/assets/afea3e16-37cd-4a6e-8783-d050d5ccd13c" />
 
@@ -54,6 +56,13 @@ SolTempo does not collect, store, or share personal data. Audio analysis happens
 Please star ⭐ if you like it!
 
 ### Latest Changes
+
+**1.2**
+
+* App in 8 languages: English, Russian, French, German, Spanish, Italian, Portuguese, Serbian
+* Follows the phone language, change it in Settings
+* Works with screen readers: labelled buttons and settings, the held note and the settled tempo are spoken
+* Steadier Hz and cents readout
 
 **1.1**
 
@@ -103,4 +112,6 @@ Made with [DrawnUI for .NET MAUI](https://drawnui.net)
 
 ---
 
+## Language-switch restart audit
 
+Checked 2026-10-29 per ~/.claude/skills/language-switch-restart-audit. Result: in-place rebuild variant, designed in: a language change keeps the canvas and replaces only its drawn tree (AudioPage.RebuildForLanguage), stops the old tree's audio, confetti timer and banner fade first, and reopens Settings after the new tree's first frame. Verified on Android (BV8800, Debug and Release).

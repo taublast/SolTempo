@@ -106,7 +106,7 @@ public partial class AudioPage : BasePageReloadable, IDisposable
 
     private void OnHardwareError(object sender, string e)
     {
-        ShowAlert("Hardware Error", e);
+        ShowAlert(ResStrings.HardwareError, e);
     }
 
     private async void OnRecordingSuccess(object sender, CapturedVideo capturedVideo)

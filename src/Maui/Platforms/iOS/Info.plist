@@ -18,6 +18,17 @@
 		<integer>2</integer>
 	</array>
   
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>ru</string>
+    <string>fr</string>
+    <string>de</string>
+    <string>es</string>
+    <string>it</string>
+    <string>pt-BR</string>
+    <string>sr-Latn</string>
+  </array>
   <key>NSMicrophoneUsageDescription</key>
   <string>Allow microphone to detect pitch and tempo</string>
 

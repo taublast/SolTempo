@@ -11,7 +11,7 @@ namespace SolTempo
 
         public App()
         {
-            Super.SetLocale("en"); //todo add localization support
+            AppLanguage.ApplySaved();
 
             InitializeComponent();
 

@@ -1,3 +1,4 @@
+using DrawnUi.Models;
 using SolTempo;
 using SolTempo.Audio;
 using SolTempo.Helpers;
@@ -41,6 +42,16 @@ public partial class SettingsPopup : AnimatedPopup
 
         _parentPage = page;
 
+        // screen readers: titles are headings, rows are buttons that say their value, switches say their purpose
+        TitlePitch.WithAccessibility(Aria.RoleHeading, ResStrings.PitchSettings, hint: null);
+        TitleAudio.WithAccessibility(Aria.RoleHeading, ResStrings.AudioSettings, hint: null);
+        TitleVarious.WithAccessibility(Aria.RoleHeading, ResStrings.Various, hint: null);
+        SwitchSemi.WithAccessibilityToggle(ResStrings.SharpNotes);
+        SwitchGain.WithAccessibilityToggle(ResStrings.UseGain);
+        RowShare.WithAccessibilityButton(ResStrings.ShareApp);
+        RowPrivacy.WithAccessibilityButton(ResStrings.Privacy);
+        BtnClose.WithAccessibilityButton(ResStrings.BtnClose);
+
         _ = UpdateControls();
     }
 
@@ -67,7 +78,7 @@ public partial class SettingsPopup : AnimatedPopup
             }
         }
 
-        return "Default";
+        return ResStrings.SourceDefault;
     }
 
     string GetNotationText(int value)
@@ -75,17 +86,17 @@ public partial class SettingsPopup : AnimatedPopup
         switch (value)
         {
         case 0:
-        return "Letters";
+        return ResStrings.NotationLetters;
         case 1:
-        return "European";
+        return ResStrings.NotationEuropean;
         case 2:
-        return "American";
+        return ResStrings.NotationAmerican;
         case 3:
-        return "Cyrillic";
+        return ResStrings.NotationCyrillic;
         case 4:
-        return "Numbers";
+        return ResStrings.NotationNumbers;
         default:
-        return "Default";
+        return ResStrings.SourceDefault;
         }
     }
 
@@ -100,10 +111,22 @@ public partial class SettingsPopup : AnimatedPopup
         LabelSource.Text = await GetAudioSourceText(Recorder);
         SwitchSemi.IsToggled = Notes.UseSemiNotes;
         LabelNotation.Text = GetNotationText(Notes.Notation);
+        LabelLanguage.Text = AppLanguage.CurrentName;
+
+        SetRowAccessibility(RowNotation, ResStrings.Notation, LabelNotation.Text);
+        SetRowAccessibility(RowSource, ResStrings.Source, LabelSource.Text);
+        SetRowAccessibility(RowLanguage, ResStrings.Language, LabelLanguage.Text);
 
         isInitializing = false;
     }
 
+
+    /// <summary>A picker row is read as one button: "Notation: European".</summary>
+    static void SetRowAccessibility(SkiaControl row, string name, string value)
+    {
+        row.WithAccessibilityButton($"{name}: {value}");
+        row.NotifyAccessibility();
+    }
 
     private void UseGainSwitch_OnToggled(object sender, bool value)
     {
@@ -127,17 +150,17 @@ public partial class SettingsPopup : AnimatedPopup
                 {
                     // Prefix the list with "System Default" option
                     var options = new string[inputDevices.Count + 1];
-                    options[0] = "System Default";
+                    options[0] = ResStrings.SystemDefault;
                     for (int i = 0; i < inputDevices.Count; i++)
                     {
                         options[i + 1] = inputDevices[i];
                     }
 
-                    var result = await _parentPage.DisplayActionSheet("Select Audio Source", "Cancel", null, options);
+                    var result = await _parentPage.DisplayActionSheet(ResStrings.SelectAudioSource, ResStrings.BtnCancel, null, options);
 
-                    if (!string.IsNullOrEmpty(result) && result != "Cancel")
+                    if (!string.IsNullOrEmpty(result) && result != ResStrings.BtnCancel)
                     {
-                        if (result == "System Default")
+                        if (result == ResStrings.SystemDefault)
                         {
                             Recorder.AudioDeviceIndex = -1;
                         }
@@ -162,16 +185,17 @@ public partial class SettingsPopup : AnimatedPopup
                         }
 
                         LabelSource.Text = result;
+                        SetRowAccessibility(RowSource, ResStrings.Source, result);
                     }
                 }
                 else
                 {
-                    _parentPage.ShowAlert("No Input Devices", "No audio input devices found.");
+                    _parentPage.ShowAlert(ResStrings.NoInputDevices, ResStrings.NoInputDevicesFound);
                 }
             }
             catch (Exception ex)
             {
-                _parentPage.ShowAlert("Error", $"Error getting audio devices: {ex.Message}");
+                _parentPage.ShowAlert(ResStrings.Error, string.Format(ResStrings.ErrorAudioDevices, ex.Message));
             }
         });
     }
@@ -204,9 +228,9 @@ public partial class SettingsPopup : AnimatedPopup
                         options[i] = GetNotationText(i);
                     }
 
-                    var result = await _parentPage.DisplayActionSheet("Select Notation", "Cancel", null, options);
+                    var result = await _parentPage.DisplayActionSheet(ResStrings.SelectNotation, ResStrings.BtnCancel, null, options);
 
-                    if (!string.IsNullOrEmpty(result) && result != "Cancel")
+                    if (!string.IsNullOrEmpty(result) && result != ResStrings.BtnCancel)
                     {
                         int selectedIndex = -1;
                         for (int i = 0; i < options.Length; i++)
@@ -224,6 +248,7 @@ public partial class SettingsPopup : AnimatedPopup
                         }
 
                         LabelNotation.Text = result;
+                        SetRowAccessibility(RowNotation, ResStrings.Notation, result);
                         
                         Notes.Reset();
                     }
@@ -246,9 +271,34 @@ public partial class SettingsPopup : AnimatedPopup
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await App.Instance.MainPage.DisplayAlert(
-                "Privacy Policy",
-                "SolTempo does not collect, store, or share any personal data. All audio processing happens locally on your device.",
+                ResStrings.PrivacyPolicy,
+                ResStrings.PrivacyText,
                 ResStrings.BtnOk);
+        });
+    }
+
+    private void SelectLanguage(object sender, ControlTappedEventArgs e)
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try
+            {
+                // alphabetical by the name each language has in itself: Latin ones A-Z, then Cyrillic
+                var names = AppLanguage.Enabled.Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+                var result = await _parentPage.DisplayActionSheet(ResStrings.SelectLanguage, ResStrings.BtnCancel, null, names);
+                var picked = AppLanguage.Enabled.FirstOrDefault(x => x.Name == result).Code;
+                if (picked == null || picked == AppLanguage.Current)
+                    return;
+
+                AppLanguage.Choose(picked);
+
+                // every label was built with the old words and fonts: the page is built again and Settings reopens
+                _parentPage.RebuildForLanguage();
+            }
+            catch (Exception ex)
+            {
+                Super.Log(ex);
+            }
         });
     }
 
