@@ -12,7 +12,7 @@
     <ApplicationIdGuid>3a1b76b0-efc2-4fde-9ac8-074d5c3299b3</ApplicationIdGuid>
     <ApplicationTitle>SolTempo</ApplicationTitle>
     <RootNamespace>SolTempo</RootNamespace>
-    <ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>1.2</ApplicationDisplayVersion>
 
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
