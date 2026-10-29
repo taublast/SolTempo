@@ -447,6 +447,7 @@ public partial class AudioPage
                         {
                             FontSize = 28,
                             FontAttributes = FontAttributes.Bold,
+                            FontFamilyFallback = AppFonts.DefaultLatin, //translated banner: letters the default face lacks
                             TextColor = Colors.White,
                             HorizontalOptions = LayoutOptions.Center,
                         }.Assign(out _achievementBannerLabel)

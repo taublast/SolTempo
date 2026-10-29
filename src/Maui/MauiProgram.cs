@@ -37,7 +37,7 @@ namespace SolTempo
                     fonts.AddFont("NotoColorEmoji-Regular.ttf", AppFonts.Emogi);
 
                     fonts.AddFont("Neucha-Regular.ttf", AppFonts.Default);
-                    fonts.AddFont("ShantellSans-Regular.ttf", AppFonts.DefaultLatin); //FontText for sr, it, pt: Neucha lacks their letters
+                    fonts.AddFont("ShantellSans-Regular.ttf", AppFonts.DefaultLatin); //fallback for translated words: Neucha lacks č ć đ š ž ì ò ã õ
                     fonts.AddFont("ShantellSans-Bold.ttf", AppFonts.Bold);
                     fonts.AddFont("NotoSansDisplay-Regular.ttf", AppFonts.Title);
                 });

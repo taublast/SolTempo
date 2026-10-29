@@ -167,6 +167,7 @@ namespace SolTempo.Audio
                     FontSize = 19,
                     Margin = new(0,180,0,0),
                     FontFamily = AppFonts.Default,
+                    FontFamilyFallback = AppFonts.DefaultLatin, //translated words: letters Neucha lacks
                     TextColor = Colors.LimeGreen,
                     HorizontalOptions = LayoutOptions.Center,
                     UseCache = SkiaCacheType.Operations,
@@ -178,6 +179,7 @@ namespace SolTempo.Audio
                     Text = ResStrings.TapToResetBpm,
                     FontSize = 22,
                     FontFamily = AppFonts.Default,
+                    FontFamilyFallback = AppFonts.DefaultLatin, //translated words: letters Neucha lacks
                     TextColor = Colors.LightGray,
                     VerticalOptions = LayoutOptions.Start,
                     HorizontalOptions = LayoutOptions.Center,

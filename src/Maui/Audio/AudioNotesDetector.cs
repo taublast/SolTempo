@@ -67,6 +67,7 @@ namespace SolTempo.Audio
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.End,
                     FontFamily = AppFonts.Default,
+                    FontFamilyFallback = AppFonts.DefaultLatin, //translated "cents" word: letters Neucha lacks
                     FontSize = 16,
                     TextColor = Colors.Gray,
                 }.Assign(out _labelCents),

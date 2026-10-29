@@ -6,7 +6,9 @@ namespace SolTempo.Helpers
     /// <summary>
     /// The UI language: the one picked in Settings, else the device language when the app ships it,
     /// else English. Words come from ResStrings. A switch at runtime rebuilds the page
-    /// (AudioPage.Build), so every label is created again with the new words and fonts.
+    /// (AudioPage.RebuildForLanguage), so every label is created again with the new words.
+    /// Fonts never change per language: labels showing translated words carry
+    /// FontFamilyFallback = AppFonts.DefaultLatin for the letters Neucha lacks (sr, it, pt).
     /// </summary>
     public static class AppLanguage
     {
@@ -27,12 +29,6 @@ namespace SolTempo.Helpers
             "pt" => "pt-BR",
             _ => lang,
         };
-
-        /// <summary>
-        /// Neucha (FontText) has no č ć đ š ž, ì ò, ã õ: these languages write FontText with Shantell Sans,
-        /// registered in MauiProgram as <see cref="AppFonts.DefaultLatin"/>.
-        /// </summary>
-        private static readonly string[] NeedLatinFace = { "sr", "it", "pt" };
 
         /// <summary>Code of the language the UI is in now.</summary>
         public static string Current { get; private set; } = "en";
@@ -73,23 +69,6 @@ namespace SolTempo.Helpers
             // ResStrings.Culture answers on every thread; Super.SetLocale sets the calling one only
             ResStrings.Culture = CultureInfo.CreateSpecificCulture(CultureOf(lang));
             Super.SetLocale(CultureOf(lang));
-
-            ApplyFaces(lang);
-        }
-
-        private static void ApplyFaces(string lang)
-        {
-            var fonts = SkiaFontManager.Instance.Fonts;
-            fonts.Remove(AppFonts.Default); // back to the face MauiProgram registered for it
-
-            if (NeedLatinFace.Contains(lang))
-            {
-                var face = SkiaFontManager.Instance.GetFont(AppFonts.DefaultLatin);
-                if (face != null)
-                {
-                    fonts[AppFonts.Default] = face;
-                }
-            }
         }
     }
 }
