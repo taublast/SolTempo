@@ -22,10 +22,9 @@ namespace SolTempo.Audio
             this.EnableVideoPreview = false;
             this.EnableVideoRecording = false;
 
-#if IOS
-            //measurement mode: no system auto gain lifting room noise into the equalizer
+            //raw mic: no system auto gain lifting room noise into the equalizer
+            //(iOS measurement mode, Android unprocessed source)
             this.AudioMode = CameraAudioMode.Flat;
-#endif
         }
 
         public static readonly BindableProperty UseGainProperty = BindableProperty.Create(
