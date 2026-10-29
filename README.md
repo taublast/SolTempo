@@ -62,7 +62,6 @@ Please star ⭐ if you like it!
 * App in 8 languages: English, Russian, French, German, Spanish, Italian, Portuguese, Serbian
 * Follows the phone language, change it in Settings
 * Works with screen readers: labelled buttons and settings, the held note and the settled tempo are spoken
-* Steadier Hz and cents readout
 
 **1.1**
 

@@ -718,28 +718,22 @@ namespace SolTempo.Audio
 
                     // Lock in Hz and cents only when vote is confident — keeps them
                     // in sync with the confirmed note, not jumping during transitions.
-                    // Only from frames whose own pitch IS the confirmed note: while the vote still holds a
-                    // note, a single frame read as another note (a subharmonic, a neighbour) would give
-                    // that note's Hz and hundreds of cents against the confirmed one.
-                    if (detectedMidiNote == _currentMidiNote)
+                    _currentFrequency = rawFrequency;
+
+                    float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
+                    if (targetFreq > 0)
                     {
-                        _currentFrequency = rawFrequency;
+                        float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
 
-                        float targetFreq = 440.0f * MathF.Pow(2f, (_currentMidiNote - 69) / 12f);
-                        if (targetFreq > 0)
-                        {
-                            float rawCents = 1200f * MathF.Log2(_currentFrequency / targetFreq);
+                        _centsBuf[_centsHead] = rawCents;
+                        _centsHead = (_centsHead + 1) % CentsMaxHistory;
+                        if (_centsCount < CentsMaxHistory) _centsCount++;
 
-                            _centsBuf[_centsHead] = rawCents;
-                            _centsHead = (_centsHead + 1) % CentsMaxHistory;
-                            if (_centsCount < CentsMaxHistory) _centsCount++;
-
-                            float sum = 0;
-                            int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
-                            for (int ci = 0; ci < _centsCount; ci++)
-                                sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
-                            _currentCents = sum / _centsCount;
-                        }
+                        float sum = 0;
+                        int oldest = (_centsHead - _centsCount + CentsMaxHistory) % CentsMaxHistory;
+                        for (int ci = 0; ci < _centsCount; ci++)
+                            sum += _centsBuf[(oldest + ci) % CentsMaxHistory];
+                        _currentCents = sum / _centsCount;
                     }
 
                     if (noteChanged)
