@@ -56,7 +56,7 @@ Select the microphone or audio input device to use. Choose **System Default** to
 
 ### Use Gain
 
-Apply +5 gain to boost input signal before analysis.
+Apply ×2 gain to boost input signal before analysis.
 
 ---
 

@@ -56,7 +56,7 @@ Izaberi mikrofon ili audio ulazni uređaj. Izaberi **Sistemski podrazumevani** d
 
 ### Pojačanje
 
-Pojačava ulazni signal za +5 pre analize.
+Pojačava ulazni signal za ×2 pre analize.
 
 ---
 

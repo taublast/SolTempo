@@ -56,7 +56,7 @@ Choisissez le micro ou le périphérique d'entrée audio à utiliser. Choisissez
 
 ### Amplification
 
-Applique un gain de +5 pour renforcer le signal d'entrée avant l'analyse.
+Applique un gain de ×2 pour renforcer le signal d'entrée avant l'analyse.
 
 ---
 

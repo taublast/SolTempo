@@ -56,7 +56,7 @@ Escolha o microfone ou dispositivo de entrada de áudio. Escolha **Padrão do si
 
 ### Ganho
 
-Aplica um ganho de +5 para reforçar o sinal de entrada antes da análise.
+Aplica um ganho de ×2 para reforçar o sinal de entrada antes da análise.
 
 ---
 

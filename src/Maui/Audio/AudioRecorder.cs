@@ -42,7 +42,7 @@ namespace SolTempo.Audio
         /// <summary>
         /// Gain multiplier applied to raw PCM when UseGain is true.
         /// </summary>
-        public float GainFactor { get; set; } = 5.0f;
+        public float GainFactor { get; set; } = 2.0f; //mic is unprocessed (Flat): x5 clipped
 
         public event Action<AudioSample> OnAudioSample; 
 

@@ -56,7 +56,7 @@ Wähle das Mikrofon oder Audio-Eingabegerät. Mit **Systemstandard** entscheidet
 
 ### Verstärkung
 
-Verstärkt das Eingangssignal vor der Analyse um +5.
+Verstärkt das Eingangssignal vor der Analyse um ×2.
 
 ---
 

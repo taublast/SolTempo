@@ -56,7 +56,7 @@ Scegli il microfono o il dispositivo di ingresso audio da usare. Scegli **Predef
 
 ### Guadagno
 
-Applica un guadagno di +5 per rinforzare il segnale in ingresso prima dell'analisi.
+Applica un guadagno di ×2 per rinforzare il segnale in ingresso prima dell'analisi.
 
 ---
 

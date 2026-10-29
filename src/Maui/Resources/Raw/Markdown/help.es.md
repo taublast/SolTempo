@@ -56,7 +56,7 @@ Elige el micrófono o el dispositivo de entrada de audio. Elige **Predeterminado
 
 ### Ganancia
 
-Aplica una ganancia de +5 para reforzar la señal de entrada antes del análisis.
+Aplica una ganancia de ×2 para reforzar la señal de entrada antes del análisis.
 
 ---
 

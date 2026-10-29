@@ -38,7 +38,7 @@ Features
 - Sharp/flat semitones option (C#, Eb, etc.)  
 - BPM / tempo detection (approx. 40–260 BPM) for music or metronome  
 - Tap to reset the current module and start listening from scratch  
-- Audio settings: choose input device (or System Default) and enable Gain (+5) for low signals  
+- Audio settings: choose input device (or System Default) and enable Gain (×2) for low signals  
 - App in 8 languages: English, Русский, Français, Deutsch, Español, Italiano, Português, Srpski. Follows the phone language, change it in Settings  
 - Works with screen readers: buttons and settings are labelled, the held note and the settled tempo are spoken
 
