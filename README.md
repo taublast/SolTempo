@@ -58,6 +58,7 @@ Please star ⭐ if you like it!
 **1.1**
 
 * Ready for Android 16
+* Requires Android 7.0 or newer
 * Back button closes an open panel first
 * Glass panels show the live equalizer behind them
 
@@ -77,6 +78,7 @@ Please star ⭐ if you like it!
 
  ### .NET MAUI Libs Stack
 
+* .NET 10 / MAUI 10
 * [SkiaSharp](https://github.com/mono/SkiaSharp)
 * [DrawnUi for .NET MAUI](https://github.com/taublast/DrawnUi)
 * [Plugin.Maui.AppRating](https://github.com/FabriBertani/Plugin.Maui.AppRating)
