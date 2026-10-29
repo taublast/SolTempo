@@ -21,6 +21,11 @@ namespace SolTempo.Audio
             //turn off VIDEO
             this.EnableVideoPreview = false;
             this.EnableVideoRecording = false;
+
+#if IOS
+            //measurement mode: no system auto gain lifting room noise into the equalizer
+            this.AudioMode = CameraAudioMode.Flat;
+#endif
         }
 
         public static readonly BindableProperty UseGainProperty = BindableProperty.Create(
