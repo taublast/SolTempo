@@ -1,6 +1,6 @@
-// Supernova Clean Exit
+// Supernova Exit
 // Elastic spin-zoom out + chromatic aberration + sphere refraction + rim glow
-// No star rays, no rainbow — pure geometry and fades
+// Pure geometry and fades
 
 uniform float4 iMouse;
 uniform float  iTime;
